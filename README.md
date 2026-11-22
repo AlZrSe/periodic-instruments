@@ -3,26 +3,26 @@
 A single VST3 plugin that turns **every chemical element up to Plutonium into a playable instrument**.
 All 94 elements live inside one plugin: pick an element and it becomes its own instrument, with a unique sound engine, timbre, and built-in effects chain, derived from the element's physical and chemical properties.
 
-> 94 elements. One plugin. One periodic table of sound вЂ” from Hydrogen to Plutonium.
+> 94 elements. One plugin. One periodic table of sound — from Hydrogen to Plutonium.
 
 ## Concept
 
 `periodic-instruments` maps the periodic table onto a complete virtual-instrument library inside a single VST3. The sound of each element is derived from its properties, with all mappings working together:
 
-- **Frequency of emission light** вЂ” the characteristic spectral lines of the element (its emission spectrum) are translated into the fundamental frequencies, harmonics, and modulation rates of the instrument.
+- **Frequency of emission light** — the characteristic spectral lines of the element (its emission spectrum) are translated into the fundamental frequencies, harmonics, and modulation rates of the instrument.
 - **Atomic number** drives pitch range, oscillator count, and modulation depth.
 - **Element category** (metal, nonmetal, noble gas, halogen, lanthanide, actinide, ...) selects the base synthesis engine.
 - **Physical state at STP** (solid / liquid / gas) shapes the envelope and transient character.
 - **Electronegativity & density** map to brightness, weight, and spatial width.
 - **Each element** gets a signature effects chain (reverb, delay, distortion, chorus, filter, ...) tuned to its personality.
 
-As a result, **elements sharing a group (column) of the periodic table, as well as the lanthanides, sound similar but never identical** вЂ” they share a family resemblance in timbre and behavior, yet each retains its own distinct voice.
+As a result, **elements sharing a group (column) of the periodic table, as well as the lanthanides, sound similar but never identical** — they share a family resemblance in timbre and behavior, yet each retains its own distinct voice.
 
-Hydrogen is a single instrument with a **dual mode** (alkali-like / halogen-like) rather than two separate entries. The actinides live only in the f-block and are not duplicated in groups 4вЂ“7.
+Hydrogen is a single instrument with a **dual mode** (alkali-like / halogen-like) rather than two separate entries. The actinides live only in the f-block and are not duplicated in groups 4–7.
 
 Each element also carries a **human feel** tied to where it is used in production: the way it sits in a mix, the genre or role it naturally fits, and the expressive playing style it invites (plucked, sustained, percussive, evolving, ...). This keeps the library musical and usable, not just a science demo.
 
-### Property в†’ DSP mapping
+### Property → DSP mapping
 
 | Property | DSP parameter |
 |---|---|
@@ -50,7 +50,7 @@ Metaphors used in the roster (salty, toxic, glowing, magnetic, ...) are shorthan
 
 ## Instrument Roster
 
-The full 94-element roster (sound, signature effects, and human feel / production use for every element) is documented in [docs/elements.md](docs/elements.md).
+The full 94-element roster (sound, signature effects, and human feel / production use for every element) is documented in [`docs/elements.md`](docs/elements.md).
 
 ## Requirements
 
@@ -66,8 +66,8 @@ The full 94-element roster (sound, signature effects, and human feel / productio
 2. Rescan plugins in your DAW.
 3. The plugin appears under `Instruments / Periodic Instruments`.
 4. Create an instrument track and load `Periodic Instruments`.
-5. Select an element from the periodic-table view вЂ” it becomes the active instrument.
-6. Play MIDI notes вЂ” the element's default patch loads automatically.
+5. Select an element from the periodic-table view — it becomes the active instrument.
+6. Play MIDI notes — the element's default patch loads automatically.
 7. Open the **FX** tab to tweak or bypass the element's signature effects chain.
 8. Use the **Periodic Table** view to switch elements without leaving the plugin window.
 9. Browse presets by group (alkali metals, halogens, lanthanides, ...) or period.
@@ -76,10 +76,10 @@ The full 94-element roster (sound, signature effects, and human feel / productio
 
 Each element exposes four macro knobs:
 
-- **Mass** вЂ” weight, low-end, sustain.
-- **Reactivity** вЂ” brightness, modulation, transient sharpness.
-- **State** вЂ” envelope shape (gas = airy, liquid = flowing, solid = percussive).
-- **Radiance** вЂ” effects wetness and spatial width.
+- **Mass** — weight, low-end, sustain.
+- **Reactivity** — brightness, modulation, transient sharpness.
+- **State** — envelope shape (gas = airy, liquid = flowing, solid = percussive).
+- **Radiance** — effects wetness and spatial width.
 
 ## Building from Source
 
@@ -102,16 +102,16 @@ Built plugins are output to `target/release/`.
 
 ```
 periodic-instruments/
-в”њв”Ђв”Ђ Cargo.toml
-в”њв”Ђв”Ђ src/
-в”‚   в”њв”Ђв”Ђ core/           # DSP core, voice manager, modulation
-в”‚   в”њв”Ђв”Ђ elements/       # Per-element definitions & factory
-в”‚   в”њв”Ђв”Ђ fx/             # Effects chain implementations
-в”‚   в”њв”Ђв”Ђ ui/             # Plugin UI and periodic table view
-в”‚   в””в”Ђв”Ђ plugin/         # VST3 wrapper
-в”њв”Ђв”Ђ resources/          # Samples, wavetables, IRs
-в”њв”Ђв”Ђ docs/               # Element roster, DSP notes
-в””в”Ђв”Ђ tests/
+├── Cargo.toml
+├── src/
+│   ├── core/           # DSP core, voice manager, modulation
+│   ├── elements/       # Per-element definitions & factory
+│   ├── fx/             # Effects chain implementations
+│   ├── ui/             # Plugin UI and periodic table view
+│   └── plugin/         # VST3 wrapper
+├── resources/          # Samples, wavetables, IRs
+├── docs/               # Element roster, DSP notes
+└── tests/
 ```
 
 ## Roadmap
@@ -132,4 +132,4 @@ Created by **AlZrSe**. Inspired by the periodic table and the idea that every el
 
 ---
 
-*Periodic Instruments вЂ” hear the elements.*
+*Periodic Instruments — hear the elements.*
