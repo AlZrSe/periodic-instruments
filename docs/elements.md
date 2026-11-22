@@ -302,4 +302,107 @@ Chemical properties map to DSP parameters (see README concept for full list):
 | Radioactive (Pm, Tc, Po, U, Pu, ...) | Granular, random LFO, pitch instability |
 | Liquid/flowing (Hg, Ga) | Portamento/glide, phaser/flanger |
 
+---
+
+## Orchestral Instrument Mapping
+
+Accent on orchestral color: each element's voice is also described by the orchestral instrument/section it most naturally evokes (for layering and arrangement).
+
+| Element | Orchestral color / role |
+|---|---|
+| H | Piccolo / flute (airy top) |
+| He | Flute / breath noise |
+| Li | Pizzicato violin |
+| Be | Glockenspiel / mallet |
+| B | Tubular bells / celesta |
+| C | Acoustic guitar / rhythm strings |
+| N | Low strings / dark pad |
+| O | Breath / choir air |
+| F | Sharp brass stab |
+| Ne | Sine lead / glass harp |
+| Na | Plucked harp |
+| Mg | Triangle / light percussion |
+| Al | Smooth strings |
+| Si | Digital celesta |
+| P | Warm pad / tremolo strings |
+| S | Gritty brass |
+| Cl | Staccato brass |
+| Ar | Contrabass drone |
+| K | Piano / warm keys |
+| Ca | Dry percussion |
+| Sc | Light percussion |
+| Ti | Timpani / metallic hits |
+| V | Industrial brass |
+| Cr | Bright metallic hits |
+| Mn | Dry snare-like |
+| Fe | Heavy brass / anvil |
+| Co | Warm horn |
+| Ni | Smooth strings |
+| Cu | Warm horn / soul brass |
+| Zn | Triangle / bright percussion |
+| Ga | Glossy strings |
+| Ge | Vintage keys |
+| As | Edgy strings |
+| Se | Glassy strings |
+| Br | Heavy brass |
+| Kr | Sparkly strings |
+| Rb | Retro bass |
+| Sr | Marimba |
+| Y | Warm strings |
+| Zr | Heavy percussion |
+| Nb | Smooth synth strings |
+| Mo | Bright brass |
+| Tc | Unstable FX |
+| Ru | Bright brass hits |
+| Rh | Polished strings |
+| Pd | Soft strings |
+| Ag | High strings / bells |
+| Cd | Dark strings |
+| In | Warm strings |
+| Sn | Bright plucks |
+| Sb | Metallic strings |
+| Te | Dark bass |
+| I | Dark brass |
+| Xe | Deep strings |
+| Cs | Warm bass |
+| Ba | Low percussion |
+| La | Warm strings |
+| Ce | Shimmering strings |
+| Pr | Colorful strings |
+| Nd | Focused strings |
+| Pm | Unstable FX |
+| Sm | Moody strings |
+| Eu | Glowing strings |
+| Gd | Cinematic strings |
+| Tb | Sparkly strings |
+| Dy | Dark strings |
+| Ho | Resonant strings |
+| Er | Pink strings |
+| Tm | Cool strings |
+| Yb | Soft strings |
+| Lu | Polished strings |
+| Hf | Heavy percussion |
+| Ta | Heavy brass |
+| W | Impact percussion |
+| Re | Bright brass |
+| Os | Extreme low percussion |
+| Ir | Bright brass |
+| Pt | Lush strings |
+| Au | Lush strings |
+| Hg | Portamento strings |
+| Tl | Dark strings |
+| Pb | Sub bass |
+| Bi | Shimmering strings |
+| Po | Horror strings |
+| At | Unstable FX |
+| Rn | Dark ambient strings |
+| Fr | Dark bass |
+| Ra | Ominous percussion |
+| Ac | Soft strings |
+| Th | Heavy strings |
+| Pa | Unstable FX |
+| U | Dark cinematic strings |
+| Np | Dark sci-fi strings |
+| Pu | Horror strings |
+
 *Draft — descriptions to be refined per element as DSP design progresses.*
