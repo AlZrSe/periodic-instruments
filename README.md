@@ -26,12 +26,12 @@ Each element also carries a **human feel** tied to where it is used in productio
 
 | Property | DSP parameter |
 |---|---|
-| Atomic mass | Fundamental pitch, decay length, "weight"/low-end |
+| Atomic mass | Decay length, low-end weight, sub amount, density (pitch stays in musical range via octave-constrained mapping) |
 | Electronegativity | Filter brightness/aggression, attack speed |
 | Reactivity | Envelope speed, probability of random modulation |
 | Radioactivity | Granular processing, random LFO, pitch instability |
 | Magnetism | Resonance, pitch glide, harmonic "attraction" |
-| Emission color (glow) | Spectral shift / formant (artistic marker) |
+| Emission color (glow) | Formant/spectral shift: greenish = upper-mid peak, red = low-mid warmth, blue = high airy shift, pink = soft formant shimmer |
 | Valence | Harmonic count / layer count |
 
 Metaphors used in the roster (salty, toxic, glowing, magnetic, ...) are shorthand for the DSP treatments above, not just flavor text.
