@@ -29,7 +29,7 @@ Each element also carries a **human feel** tied to where it is used in productio
 - **Polyphonic** with up to 64 voices, **MPE** support where applicable.
 - **Low CPU** footprint; DSP core written in Rust.
 - **Preset browser** organized by group, period, and block of the periodic table.
-- **Resizable UI** with a periodic-table overview for quick element switching.
+- **Resizable UI** built with **iced** (via nice-plug), with a periodic-table overview for quick element switching.
 - **Human feel / production role** tagging for every element.
 
 ## Instrument Roster (selected)
@@ -105,7 +105,9 @@ git clone https://github.com/AlZrSe/periodic-instruments.git
 cd periodic-instruments
 ```
 
-Prerequisites: Rust (stable), Cargo, and the VST3 SDK.
+Prerequisites: Rust (stable), Cargo, and the VST3 SDK. The project uses
+[nice-plug](https://codeberg.org/RustAudio/nice-plug) as its plugin framework
+with an **iced** GUI.
 
 ```bash
 cargo build --release
