@@ -26,9 +26,6 @@ atomic_float = "1"
 # Lock-free synchronization
 parking_lot = "0.12"
 
-# Parameter smoothing
-nih-plug = { version = "0.4", features = ["vst3"] }
-
 # UID/FUID generation
 uid = "1.0"
 
@@ -59,7 +56,7 @@ debug = true
 
 [features]
 default = ["vst3"]
-vst3 = ["nice-plug/vst3", "nih-plug/vst3"]
+vst3 = ["nice-plug/vst3"]
 
 # For testing without GUI
 headless = []
