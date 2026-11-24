@@ -21,7 +21,7 @@ nice-plug = { version = "0.3", features = ["vst3", "iced", "vst3-sys"] }
 iced = { version = "0.12", features = ["core", "runtime", "widgets", "text", "graphics", "wgpu"] }
 
 # Atomic floats for lock-free parameter sharing
-atomic_float = "0.4"
+atomic_float = "1"
 
 # Lock-free synchronization
 parking_lot = "0.12"
