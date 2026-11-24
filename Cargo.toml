@@ -27,7 +27,7 @@ atomic_float = "1"
 parking_lot = "0.12"
 
 # UID/FUID generation
-uid = "1.0"
+uid = "0.1"
 
 # Logging
 tracing = "0.1"
