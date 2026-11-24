@@ -1,0 +1,31 @@
+# Cargo
+target/
+Cargo.lock
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# VST3 bundles (generated)
+*.vst3/
+
+# Logs
+*.log
+
+# Temporary files
+*.tmp
+*.temp
+
+# Build artifacts
+*.dll
+*.so
+*.dylib
+
+# Test outputs
+test-output/

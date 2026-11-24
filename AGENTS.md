@@ -58,6 +58,21 @@ Load the `agent-team` skill at the start of a development session.
 - Code is only committed to `main` after PM acceptance.
 - Enforce definition of done (`templates/definition-of-done.md`).
 
+## Issue label management
+
+- **Before spawning a subagent** for a task, the orchestrator **must update the GitHub Issue label** to reflect the new state (e.g., `ready-for-grooming` → `in-progress`, `in-progress` → `needs-review`, etc.).
+- **Exclusive ownership via `running` label**: When a session begins work on an issue, it **must set the label `running`** on that issue. **No other session may pick up or work on an issue bearing the `running` label** — only the session that set it may continue work on that issue.
+- When the session completes its work (or hands off), it **must change the label** from `running` to the next appropriate state label (e.g., `needs-review`, `done`, `blocked`).
+- This prevents race conditions where multiple agents/subagents work on the same issue simultaneously.
+
+## Dependency checking
+
+- **Before starting work on an issue**, the agent **must verify that all dependency issues** (referenced in the issue description or linked as "depends on", "blocks", etc.) **have the label `done` and are closed**.
+- If any dependency is not `done`/closed, the agent **must not start work** and should either:
+  - Wait for the dependency to complete, or
+  - Mark the current issue as `blocked` with a comment referencing the incomplete dependency
+- This ensures tasks are executed in the correct order and prevents integration issues from incomplete prerequisites.
+
 ## Suggested team split (periodic-instruments)
 
 - **DSP core** (`src/core/`): voice manager, modulation, parameter mapping.
