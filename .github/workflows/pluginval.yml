@@ -18,10 +18,23 @@ jobs:
   pluginval-windows:
     name: Pluginval Windows (Level 5 & 7)
     runs-on: [self-hosted, win]
-    timeout-minutes: 15
+    timeout-minutes: 20
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+
+      - name: Build VST3 plugin (Windows)
+        shell: pwsh
+        run: |
+          Write-Host "Building VST3 plugin..."
+          cargo build --release
+          $bundlePath = "${{ env.VST3_BUNDLE_PATH }}"
+          if (-not (Test-Path $bundlePath)) {
+            Write-Error "VST3 bundle not found at $bundlePath after build"
+            Get-ChildItem "target/release" -Force
+            exit 1
+          }
+          Write-Host "Built VST3 bundle at $bundlePath"
 
       - name: Download pluginval (Windows)
         id: download-pluginval-windows
@@ -125,10 +138,22 @@ jobs:
   pluginval-linux:
     name: Pluginval Linux (Level 5 & 7)
     runs-on: [self-hosted, linux]
-    timeout-minutes: 15
+    timeout-minutes: 20
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+
+      - name: Build VST3 plugin (Linux)
+        run: |
+          echo "Building VST3 plugin..."
+          cargo build --release
+          BUNDLE_PATH="${{ env.VST3_BUNDLE_PATH }}"
+          if [ ! -d "$BUNDLE_PATH" ]; then
+            echo "VST3 bundle not found at $BUNDLE_PATH after build"
+            ls -la target/release/
+            exit 1
+          fi
+          echo "Built VST3 bundle at $BUNDLE_PATH"
 
       - name: Install Xvfb and dependencies (Linux)
         run: |
