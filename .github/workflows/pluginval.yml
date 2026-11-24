@@ -2,7 +2,7 @@ name: Pluginval Validation
 
 on:
   push:
-    branches: [main, develop]
+    branches: [main, develop, "task/**"]
   pull_request:
     branches: [main, develop]
 
