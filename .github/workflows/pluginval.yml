@@ -137,11 +137,19 @@ jobs:
 
   pluginval-linux:
     name: Pluginval Linux (Level 5 & 7)
-    runs-on: [self-hosted, linux]
+    runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Install VST3 SDK dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y xvfb libxcb-cursor0 libxkbcommon-x11-0 cmake
 
       - name: Build VST3 plugin (Linux)
         run: |
@@ -154,11 +162,6 @@ jobs:
             exit 1
           fi
           echo "Built VST3 bundle at $BUNDLE_PATH"
-
-      - name: Install Xvfb and dependencies (Linux)
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y xvfb libxcb-cursor0 libxkbcommon-x11-0
 
       - name: Download pluginval (Linux)
         id: download-pluginval-linux
