@@ -1,7 +1,8 @@
 //! Parameter definitions and handling for Periodic Instruments VST3 plugin
 
-use std::sync::atomic::{AtomicU32, AtomicF32, Ordering};
-use vst3::{Parameter, ParameterFlags, ParameterInfo as Vst3ParameterInfo};
+use std::sync::atomic::{AtomicU32, Ordering};
+use atomic_float::AtomicF32;
+use vst3::parameter::{Parameter, ParameterFlags, ParameterInfo as Vst3ParameterInfo};
 
 /// Number of parameters: Element Selector (1-94) + 4 Macro knobs
 pub const PARAMETER_COUNT: usize = 5;

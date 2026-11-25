@@ -1,6 +1,8 @@
 //! VST3 Plugin Controller implementation
 
-use vst3::{Editor, ViewRect, Error, ViewType};
+use vst3::editor::{Editor, ViewRect};
+use vst3::error::Error;
+use vst3::base::ViewType;
 use std::sync::Arc;
 use crate::plugin::parameters::ParameterValues;
 use crate::plugin::processor::PeriodicInstrumentsProcessor;
@@ -48,7 +50,7 @@ impl Editor for PeriodicInstrumentsEditor {
 /// VST3 Plugin Controller
 pub struct PeriodicInstrumentsController {
     processor: Arc<PeriodicInstrumentsProcessor>,
-    parameters: Vec<Box<dyn vst3::Parameter>>,
+    parameters: Vec<Box<dyn vst3::parameter::Parameter>>,
     param_values: Arc<ParameterValues>,
 }
 
@@ -73,8 +75,8 @@ impl PeriodicInstrumentsController {
     }
 }
 
-impl vst3::PluginController for PeriodicInstrumentsController {
-    fn initialize(&mut self, _context: vst3::InitializeContext) -> Result<(), Error> {
+impl vst3::controller::PluginController for PeriodicInstrumentsController {
+    fn initialize(&mut self, _context: vst3::context::InitializeContext) -> Result<(), Error> {
         Ok(())
     }
 
@@ -86,8 +88,8 @@ impl vst3::PluginController for PeriodicInstrumentsController {
         self.parameters.len() as u32
     }
 
-    fn get_parameter_info(&self, index: u32) -> Option<vst3::ParameterInfo> {
-        self.parameters.get(index as usize).map(|p| vst3::ParameterInfo {
+    fn get_parameter_info(&self, index: u32) -> Option<vst3::parameter::ParameterInfo> {
+        self.parameters.get(index as usize).map(|p| vst3::parameter::ParameterInfo {
             id: p.get_id(),
             title: p.get_title(),
             short_title: p.get_short_title(),
@@ -109,8 +111,8 @@ impl vst3::PluginController for PeriodicInstrumentsController {
         }
     }
 
-    fn get_controller_class_id(&self) -> vst3::TUID {
-        vst3::TUID::from_bytes([
+    fn get_controller_class_id(&self) -> vst3::factory::TUID {
+        vst3::factory::TUID::from_bytes([
             0x70, 0x65, 0x72, 0x69, 0x6F, 0x64, 0x69, 0x63,
             0x49, 0x6E, 0x73, 0x74, 0x72, 0x43, 0x00, 0x00,
         ])

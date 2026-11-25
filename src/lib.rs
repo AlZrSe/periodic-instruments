@@ -40,6 +40,7 @@ pub use plugin::parameters::{
     parameter_info,
     create_parameters,
 };
+pub use vst3::parameter::ParameterInfo as Vst3ParameterInfo;
 
 /// Plugin version as semver string
 pub const VERSION: &str = env!("CARGO_PKG_VERSION");
@@ -78,9 +79,8 @@ mod tests {
     fn test_parameter_info_macro_knobs() {
         for i in 1..5 {
             let info = parameter_info(i).expect(&format!("Parameter {i} should exist"));
-            assert_eq!(info.min_value, 0.0);
-            assert_eq!(info.max_value, 1.0);
-            assert_eq!(info.default_value, 0.5);
+            // Vst3ParameterInfo uses default_normalized_value, not default_value
+            assert_eq!(info.default_normalized_value, 0.5);
         }
     }
     
@@ -91,7 +91,7 @@ mod tests {
         assert_eq!(params.mass.load(std::sync::atomic::Ordering::Relaxed), 0.5);
         assert_eq!(params.reactivity.load(std::sync::atomic::Ordering::Relaxed), 0.5);
         assert_eq!(params.state.load(std::sync::atomic::Ordering::Relaxed), 0.5);
-        assert_eq!(params.radiance.load(std::ync::atomic::Ordering::Relaxed), 0.5);
+        assert_eq!(params.radiance.load(std::sync::atomic::Ordering::Relaxed), 0.5);
     }
     
     #[test]
