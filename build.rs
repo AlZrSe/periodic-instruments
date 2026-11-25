@@ -42,6 +42,10 @@ fn main() {
     build.file(vst3_sdk.join("base").join("funknown.cpp"));
     build.file(vst3_sdk.join("base").join("ustring.cpp"));
     build.file(vst3_sdk.join("base").join("conststringtable.cpp"));
+    build.file(vst3_sdk.join("base").join("source").join("fobject.cpp"));
+    build.file(vst3_sdk.join("base").join("source").join("fstring.cpp"));
+    build.file(vst3_sdk.join("base").join("source").join("fbuffer.cpp"));
+    build.file(vst3_sdk.join("base").join("source").join("fstreamer.cpp"));
     build.file(vst3_sdk.join("public.sdk").join("source").join("vst").join("vstcomponent.cpp"));
     build.file(vst3_sdk.join("public.sdk").join("source").join("vst").join("vstcomponentbase.cpp"));
     build.file(vst3_sdk.join("public.sdk").join("source").join("vst").join("vsteditcontroller.cpp"));
