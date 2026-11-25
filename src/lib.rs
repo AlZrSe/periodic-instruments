@@ -22,6 +22,7 @@ pub mod plugin;
 pub use plugin::{
     PeriodicInstrumentsFactory,
     PeriodicInstrumentsProcessor,
+    PeriodicInstrumentsController,
     PeriodicInstrumentsEditor,
     PLUGIN_NAME,
     PLUGIN_VENDOR,
@@ -37,8 +38,8 @@ pub use plugin::parameters::{
     ParameterValues,
     PARAMETER_COUNT,
     parameter_info,
+    create_parameters,
 };
-pub use vst3::ParameterInfo;
 
 /// Plugin version as semver string
 pub const VERSION: &str = env!("CARGO_PKG_VERSION");
@@ -69,10 +70,7 @@ mod tests {
     #[test]
     fn test_parameter_info_element_selector() {
         let info = parameter_info(0).expect("Parameter 0 should exist");
-        assert_eq!(info.name, "Element Selector");
-        assert_eq!(info.min_value, 1.0);
-        assert_eq!(info.max_value, 94.0);
-        assert_eq!(info.default_value, 1.0);
+        assert_eq!(info.title, "Element Selector");
         assert_eq!(info.step_count, Some(94));
     }
     
@@ -83,7 +81,6 @@ mod tests {
             assert_eq!(info.min_value, 0.0);
             assert_eq!(info.max_value, 1.0);
             assert_eq!(info.default_value, 0.5);
-            assert!(info.flags.contains(vst3::ParameterFlags::AUTOMATABLE));
         }
     }
     

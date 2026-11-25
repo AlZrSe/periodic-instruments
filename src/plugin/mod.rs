@@ -1,24 +1,16 @@
 //! VST3 plugin entry point and implementation
-//!
-//! This module contains the complete VST3 plugin implementation including:
-//! - Plugin factory and FUID registration
-//! - Parameter definitions (5 parameters)
-//! - Audio processor (allocation-free)
-//! - GUI editor registration via vst3/iced
 
 pub mod factory;
 pub mod parameters;
 pub mod processor;
+pub mod controller;
 pub mod editor;
 
-use vst3::{Factory, Processor, Editor, PluginInfo, ParameterInfo, ParameterFlags, Error, InitializeContext, ProcessingSetup, ProcessContext, EditorBounds};
-use std::sync::Arc;
-
-// Re-export main types
-pub use factory::PeriodicInstrumentsFactory;
-pub use parameters::{ParameterId, PARAMETER_COUNT, ParameterInfo, parameter_info};
-pub use processor::PeriodicInstrumentsProcessor;
-pub use editor::PeriodicInstrumentsEditor;
+use vst3::{Factory, PluginFactory, TUID, PluginController};
+use crate::plugin::factory::PeriodicInstrumentsFactory;
+use crate::plugin::controller::PeriodicInstrumentsController;
+use crate::plugin::processor::PeriodicInstrumentsProcessor;
+use crate::plugin::editor::PeriodicInstrumentsEditor;
 
 /// Plugin metadata constants
 pub const PLUGIN_NAME: &str = "Periodic Instruments";
@@ -44,5 +36,17 @@ pub extern "C" fn GetPluginFactory() -> *mut dyn Factory {
     Box::into_raw(factory) as *mut dyn Factory
 }
 
-// VST3 plugin declaration using vst3 crate macro
-vst3::plugin_main!(PeriodicInstrumentsFactory);
+// VST3 module declaration
+vst3::module! {
+    class_ids: [
+        "Periodic Instruments" => [
+            0x70, 0x65, 0x72, 0x69, 0x6F, 0x64, 0x69, 0x63,
+            0x49, 0x6E, 0x73, 0x74, 0x72, 0x75, 0x6D, 0x00,
+        ],
+        "Periodic Instruments Controller" => [
+            0x70, 0x65, 0x72, 0x69, 0x6F, 0x64, 0x69, 0x63,
+            0x49, 0x6E, 0x73, 0x74, 0x72, 0x43, 0x00, 0x00,
+        ],
+    ],
+    factory: PeriodicInstrumentsFactory,
+}
