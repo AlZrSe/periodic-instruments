@@ -6,7 +6,7 @@
 //! - Variable block size and sample rate support
 //! - Bypass handling
 
-use vst3::prelude::*;
+use vst3::{Processor, Error, InitializeContext, ProcessingSetup, ProcessContext};
 use crate::plugin::parameters::ParameterValues;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -52,7 +52,7 @@ impl PeriodicInstrumentsProcessor {
     }
     
     /// Clear output buffers to silence
-    fn clear_output(&self, outputs: &mut [AudioBuffer<f32>], num_samples: usize) {
+    fn clear_output(&self, outputs: &mut [vst3::AudioBuffer<f32>], num_samples: usize) {
         for output in outputs.iter_mut() {
             for channel in output.channels_mut() {
                 // Clear only the valid samples
@@ -64,26 +64,26 @@ impl PeriodicInstrumentsProcessor {
     }
 }
 
-impl vst3::Processor for PeriodicInstrumentsProcessor {
-    fn initialize(&mut self, _context: &mut vst3::InitializeContext) -> Result<(), vst3::Error> {
+impl Processor for PeriodicInstrumentsProcessor {
+    fn initialize(&mut self, _context: &mut InitializeContext) -> Result<(), Error> {
         self.active.store(true, Ordering::Relaxed);
         tracing::info!("Processor initialized at {} Hz, max block {}", self.sample_rate, self.max_block_size);
         Ok(())
     }
     
-    fn setup_processing(&mut self, setup: &vst3::ProcessingSetup) -> Result<(), vst3::Error> {
+    fn setup_processing(&mut self, setup: &ProcessingSetup) -> Result<(), Error> {
         self.sample_rate = setup.sample_rate;
         self.max_block_size = setup.max_samples_per_block;
         
         if self.max_block_size as usize > MAX_BLOCK_SIZE {
-            return Err(vst3::Error::BufferTooSmall);
+            return Err(Error::BufferTooSmall);
         }
         
         tracing::info!("Processing setup: {} Hz, max block {}", self.sample_rate, self.max_block_size);
         Ok(())
     }
     
-    fn set_active(&mut self, active: bool) -> Result<(), vst3::Error> {
+    fn set_active(&mut self, active: bool) -> Result<(), Error> {
         self.active.store(active, Ordering::Relaxed);
         if active {
             tracing::info!("Processor activated");
@@ -93,7 +93,7 @@ impl vst3::Processor for PeriodicInstrumentsProcessor {
         Ok(())
     }
     
-    fn process(&mut self, context: &mut vst3::ProcessContext) -> Result<(), vst3::Error> {
+    fn process(&mut self, context: &mut ProcessContext) -> Result<(), Error> {
         // Check if processing is active
         if !self.active.load(Ordering::Relaxed) {
             return Ok(());
@@ -135,42 +135,5 @@ impl vst3::Processor for PeriodicInstrumentsProcessor {
     
     fn can_do_automation(&self) -> bool {
         true
-    }
-}
-
-/// Audio buffer wrapper for vst3
-#[derive(Debug)]
-pub struct AudioBuffer<T> {
-    channels: Vec<Vec<T>>,
-}
-
-impl<T> AudioBuffer<T> {
-    pub fn new(num_channels: usize, capacity: usize) -> Self 
-    where 
-        T: Default + Clone 
-    {
-        Self {
-            channels: vec![vec![T::default(); capacity]; num_channels],
-        }
-    }
-    
-    pub fn channels(&self) -> &[Vec<T>] {
-        &self.channels
-    }
-    
-    pub fn channels_mut(&mut self) -> &mut [Vec<T>] {
-        &mut self.channels
-    }
-    
-    pub fn channel(&self, index: usize) -> Option<&[T]> {
-        self.channels.get(index).map(|v| v.as_slice())
-    }
-    
-    pub fn channel_mut(&mut self, index: usize) -> Option<&mut [T]> {
-        self.channels.get_mut(index).map(|v| v.as_mut_slice())
-    }
-    
-    pub fn num_channels(&self) -> usize {
-        self.channels.len()
     }
 }

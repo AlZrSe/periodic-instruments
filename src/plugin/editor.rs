@@ -2,18 +2,17 @@
 //!
 //! Provides the VST3 editor view using vst3's iced integration.
 
-use vst3::prelude::*;
+use vst3::{Editor, Error, EditorBounds};
 use crate::ui::{EditorState, EditorMessage, DEFAULT_WIDTH, DEFAULT_HEIGHT, MIN_WIDTH, MIN_HEIGHT};
 
 /// Plugin editor wrapper for vst3
 pub struct PeriodicInstrumentsEditor {
-    editor: iced::Sandbox<EditorState, EditorMessage>,
+    _phantom: std::marker::PhantomData<(EditorState, EditorMessage)>,
 }
 
 impl PeriodicInstrumentsEditor {
     pub fn new() -> Self {
-        let editor = iced::Sandbox::<EditorState, EditorMessage>::new();
-        Self { editor }
+        Self { _phantom: std::marker::PhantomData }
     }
 }
 
@@ -23,27 +22,27 @@ impl Default for PeriodicInstrumentsEditor {
     }
 }
 
-impl vst3::Editor for PeriodicInstrumentsEditor {
+impl Editor for PeriodicInstrumentsEditor {
     fn is_open(&self) -> bool {
         true
     }
     
-    fn open(&mut self, parent: *mut std::ffi::c_void) -> Result<(), vst3::Error> {
+    fn open(&mut self, _parent: *mut std::ffi::c_void) -> Result<(), Error> {
         // Iced editor setup would go here
         // For now, just return OK
         Ok(())
     }
     
-    fn close(&mut self) -> Result<(), vst3::Error> {
+    fn close(&mut self) -> Result<(), Error> {
         Ok(())
     }
     
-    fn set_bounds(&mut self, bounds: vst3::EditorBounds) -> Result<(), vst3::Error> {
+    fn set_bounds(&mut self, _bounds: EditorBounds) -> Result<(), Error> {
         Ok(())
     }
     
-    fn get_bounds(&self) -> vst3::EditorBounds {
-        vst3::EditorBounds {
+    fn get_bounds(&self) -> EditorBounds {
+        EditorBounds {
             x: 0,
             y: 0,
             width: DEFAULT_WIDTH,

@@ -1,7 +1,7 @@
 //! Plugin factory — creates processor and editor instances
 
-use vst3::prelude::*;
-use crate::plugin::parameters::{PARAMETER_COUNT, ParameterInfo, parameter_info};
+use vst3::{Factory, Processor, Editor, PluginInfo, ParameterInfo, ParameterFlags};
+use crate::plugin::parameters::{PARAMETER_COUNT, parameter_info};
 use crate::plugin::processor::PeriodicInstrumentsProcessor;
 use crate::plugin::editor::PeriodicInstrumentsEditor;
 use crate::plugin::{PLUGIN_NAME, PLUGIN_VENDOR, PLUGIN_VERSION, PLUGIN_CATEGORY, PLUGIN_UNIQUE_ID, PLUGIN_CLASS_ID};
@@ -23,12 +23,12 @@ impl Default for PeriodicInstrumentsFactory {
     }
 }
 
-impl vst3::Factory for PeriodicInstrumentsFactory {
-    fn create_processor(&self, sample_rate: f32, max_block_size: u32) -> Box<dyn vst3::Processor> {
+impl Factory for PeriodicInstrumentsFactory {
+    fn create_processor(&self, sample_rate: f32, max_block_size: u32) -> Box<dyn Processor> {
         Box::new(PeriodicInstrumentsProcessor::new(sample_rate, max_block_size))
     }
     
-    fn create_editor(&self) -> Box<dyn vst3::Editor> {
+    fn create_editor(&self) -> Box<dyn Editor> {
         Box::new(PeriodicInstrumentsEditor::new())
     }
     
@@ -40,8 +40,8 @@ impl vst3::Factory for PeriodicInstrumentsFactory {
         parameter_info(index)
     }
     
-    fn plugin_info(&self) -> vst3::PluginInfo {
-        vst3::PluginInfo {
+    fn plugin_info(&self) -> PluginInfo {
+        PluginInfo {
             name: PLUGIN_NAME,
             vendor: PLUGIN_VENDOR,
             version: PLUGIN_VERSION,

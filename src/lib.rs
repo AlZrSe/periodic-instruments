@@ -37,8 +37,8 @@ pub use plugin::parameters::{
     ParameterValues,
     PARAMETER_COUNT,
     parameter_info,
-    ParameterInfo,
 };
+pub use vst3::ParameterInfo;
 
 /// Plugin version as semver string
 pub const VERSION: &str = env!("CARGO_PKG_VERSION");
@@ -83,7 +83,7 @@ mod tests {
             assert_eq!(info.min_value, 0.0);
             assert_eq!(info.max_value, 1.0);
             assert_eq!(info.default_value, 0.5);
-            assert!(info.flags.contains(vst3::prelude::ParameterFlags::AUTOMATABLE));
+            assert!(info.flags.contains(vst3::ParameterFlags::AUTOMATABLE));
         }
     }
     

@@ -11,12 +11,12 @@ pub mod parameters;
 pub mod processor;
 pub mod editor;
 
-use vst3::prelude::*;
+use vst3::{Factory, Processor, Editor, PluginInfo, ParameterInfo, ParameterFlags, Error, InitializeContext, ProcessingSetup, ProcessContext, EditorBounds};
 use std::sync::Arc;
 
 // Re-export main types
 pub use factory::PeriodicInstrumentsFactory;
-pub use parameters::{ParameterId, PARAMETER_COUNT, ParameterInfo};
+pub use parameters::{ParameterId, PARAMETER_COUNT, ParameterInfo, parameter_info};
 pub use processor::PeriodicInstrumentsProcessor;
 pub use editor::PeriodicInstrumentsEditor;
 
@@ -39,10 +39,10 @@ pub const PLUGIN_CLASS_ID: [u8; 16] = [
 
 /// Plugin entry point — called by VST3 host
 #[no_mangle]
-pub extern "C" fn GetPluginFactory() -> *mut dyn vst3::Factory {
+pub extern "C" fn GetPluginFactory() -> *mut dyn Factory {
     let factory = Box::new(PeriodicInstrumentsFactory::new());
-    Box::into_raw(factory) as *mut dyn vst3::Factory
+    Box::into_raw(factory) as *mut dyn Factory
 }
 
-// VST3 plugin declaration using vst3 crate macros
-vst3::plugin_entry!(PeriodicInstrumentsFactory);
+// VST3 plugin declaration using vst3 crate macro
+vst3::plugin_main!(PeriodicInstrumentsFactory);
