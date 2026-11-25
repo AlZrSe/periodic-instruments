@@ -91,7 +91,7 @@ mod tests {
         assert_eq!(params.mass.load(std::sync::atomic::Ordering::Relaxed), 0.5);
         assert_eq!(params.reactivity.load(std::sync::atomic::Ordering::Relaxed), 0.5);
         assert_eq!(params.state.load(std::sync::atomic::Ordering::Relaxed), 0.5);
-        assert_eq!(params.radiance.load(std::sync::atomic::Ordering::Relaxed), 0.5);
+        assert_eq!(params.radiance.load(std::ync::atomic::Ordering::Relaxed), 0.5);
     }
     
     #[test]

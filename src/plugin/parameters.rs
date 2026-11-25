@@ -89,7 +89,7 @@ impl Default for ParameterValues {
 
 /// Parameter information for VST3 host
 pub fn parameter_info(index: u32) -> Option<Vst3ParameterInfo> {
-    let (id, name, min, max, default, step_count, flags) = match index {
+    let (name, min, max, default, step_count, flags) = match index {
         0 => (
             "Element Selector",
             1.0,
