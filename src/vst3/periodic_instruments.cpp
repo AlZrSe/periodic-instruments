@@ -120,9 +120,9 @@ public:
 		};
 
 		String str (titles[paramIndex]);
-		UString (info.title, 64).assign (str);
+		UString (info.title, 64).assign (str.text16());
 		String shortStr (shortTitles[paramIndex]);
-		UString (info.shortTitle, 64).assign (shortStr);
+		UString (info.shortTitle, 64).assign (shortStr.text16());
 		UString (info.units, 64).assign (USTRING (""));
 
 		info.id = paramIndex;
