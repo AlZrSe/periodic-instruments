@@ -40,35 +40,7 @@ public:
 
 	tresult PLUGIN_API process (ProcessData& data) override
 	{
-		// Bypass handling - check if bypass is active via the process context
-		if (data.processMode & ProcessModes::kPrefetch)
-		{
-			// Prefetch mode - still process audio
-		}
-		
-		// Check bypass parameter via the processor's bypass state
-		// Note: ProcessModes doesn't have kBypass in VST3 SDK
-		// Bypass is typically handled by the host calling setBypass()
-		
-		// Instrument mode: output silence
-		if (data.outputs)
-		{
-			for (int32 i = 0; i < data.numOutputs; ++i)
-			{
-				for (int32 ch = 0; ch < data.outputs[i].numChannels; ++ch)
-				{
-					if (data.outputs[i].channelBuffers32[ch])
-					{
-						memset (data.outputs[i].channelBuffers32[ch], 0,
-						        data.numSamples * sizeof (float));
-					}
-				}
-			}
-		}
-		return kResultTrue;
-	}
-
-		// Instrument mode: output silence
+		// Instrument mode: output silence (foundation build)
 		if (data.outputs)
 		{
 			for (int32 i = 0; i < data.numOutputs; ++i)
@@ -148,9 +120,9 @@ public:
 		};
 
 		String str (titles[paramIndex]);
-		UString (info.title, 64).assign (str.getChar16());
+		UString (info.title, 64).assign (str);
 		String shortStr (shortTitles[paramIndex]);
-		UString (info.shortTitle, 64).assign (shortStr.getChar16());
+		UString (info.shortTitle, 64).assign (shortStr);
 		UString (info.units, 64).assign (USTRING (""));
 
 		info.id = paramIndex;
