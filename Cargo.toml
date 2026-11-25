@@ -15,7 +15,7 @@ crate-type = ["cdylib", "rlib"]
 
 [dependencies]
 # VST3 plugin framework
-vst3 = "0.6"
+vst3 = "0.3"
 
 # GUI framework
 iced = { version = "0.12", features = ["core", "runtime", "widgets", "text", "graphics", "wgpu"] }
@@ -41,7 +41,7 @@ serde_json = "1.0"
 dirs = "5.0"
 
 [build-dependencies]
-vst3 = "0.6"
+vst3 = "0.3"
 
 [profile.release]
 lto = true
