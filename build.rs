@@ -11,9 +11,9 @@ fn main() {
     println!("cargo:rerun-if-changed=src/vst3/moduleinfo.json");
     println!("cargo:rerun-if-changed=vst3sdk");
 
-    let target = env::var("TARGET").unwrap();
-    let profile = env::var("PROFILE").unwrap();
-    let out_dir = PathBuf::from(env::var("OUT_DIR").unwrap());
+    let _target = env::var("TARGET").unwrap();
+    let _profile = env::var("PROFILE").unwrap();
+    let _out_dir = PathBuf::from(env::var("OUT_DIR").unwrap());
     let manifest_dir = PathBuf::from(env::var("CARGO_MANIFEST_DIR").unwrap());
 
     // VST3 SDK is in the repository
@@ -33,6 +33,7 @@ fn main() {
          .pic(true);
 
     // Add VST3 SDK include paths
+    build.include(&vst3_sdk);  // For "pluginterfaces/base/fplatform.h" style includes
     build.include(vst3_sdk.join("pluginterfaces"));
     build.include(vst3_sdk.join("public.sdk").join("source"));
     build.include(vst3_sdk.join("base"));
