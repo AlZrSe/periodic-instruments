@@ -20,10 +20,6 @@ pub mod plugin;
 
 // Re-export main plugin types for VST3 entry point
 pub use plugin::{
-    PeriodicInstrumentsFactory,
-    PeriodicInstrumentsProcessor,
-    PeriodicInstrumentsController,
-    PeriodicInstrumentsEditor,
     PLUGIN_NAME,
     PLUGIN_VENDOR,
     PLUGIN_VERSION,
@@ -34,12 +30,9 @@ pub use plugin::{
 
 // Re-export parameter types
 pub use plugin::parameters::{
-    ParameterId,
-    ParameterValues,
     PARAMETER_COUNT,
-    parameter_info,
-    create_parameters,
-    ParameterInfoLegacy,
+    ParameterValues,
+    VstParameterInfo,
 };
 
 /// Plugin version as semver string
@@ -66,23 +59,6 @@ mod tests {
     #[test]
     fn test_parameter_count() {
         assert_eq!(PARAMETER_COUNT, 5);
-    }
-    
-    #[test]
-    fn test_parameter_info_element_selector() {
-        let info = parameter_info(0).expect("Parameter 0 should exist");
-        assert_eq!(info.name, "Element Selector");
-        assert_eq!(info.step_count, Some(94));
-    }
-    
-    #[test]
-    fn test_parameter_info_macro_knobs() {
-        for i in 1..5 {
-            let info = parameter_info(i).expect(&format!("Parameter {i} should exist"));
-            assert_eq!(info.min, 0.0);
-            assert_eq!(info.max, 1.0);
-            assert_eq!(info.default, 0.5);
-        }
     }
     
     #[test]

@@ -14,8 +14,8 @@ name = "periodic_instruments"
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
-# VST3 plugin framework (nih-plug provides VST3/CLAP support)
-nih-plug = { version = "0.8", features = ["vst3", "vst3-sys"] }
+# VST3 SDK bindings (official low-level bindings)
+vst3-sys = { version = "0.3", features = ["plugin"] }
 
 # GUI framework
 iced = { version = "0.12", features = ["default", "wgpu", "tokio"] }
@@ -52,7 +52,7 @@ panic = "abort"
 
 [features]
 default = ["vst3"]
-vst3 = ["nih-plug/vst3"]
+vst3 = []
 
 # For testing without GUI
 headless = []

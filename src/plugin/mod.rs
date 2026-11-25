@@ -1,4 +1,4 @@
-//! VST3 plugin entry point and implementation using nih-plug
+//! VST3 plugin entry point and implementation using vst3-sys
 
 pub mod factory;
 pub mod parameters;
@@ -6,11 +6,8 @@ pub mod processor;
 pub mod controller;
 pub mod editor;
 
-use nih_plug::prelude::*;
-use crate::plugin::factory::{PeriodicInstrumentsFactory, PeriodicInstrumentsPlugin};
-use crate::plugin::controller::PeriodicInstrumentsController;
-use crate::plugin::processor::PeriodicInstrumentsProcessor;
-use crate::plugin::editor::PeriodicInstrumentsEditor;
+use vst3_sys::vst::IPluginFactory;
+use crate::plugin::factory::PluginFactory;
 
 /// Plugin metadata constants
 pub const PLUGIN_NAME: &str = "Periodic Instruments";
@@ -29,5 +26,12 @@ pub const PLUGIN_CLASS_ID: [u8; 16] = [
     0x6E, 0x74, 0x73, 0x00,  // "nts\0"
 ];
 
-// nih-plug plugin entry point
-nih_plug::vst3::vst3_plugin_main!(PeriodicInstrumentsFactory);
+// VST3 plugin entry point - required by VST3 hosts
+#[no_mangle]
+pub extern "C" fn GetPluginFactory() -> *mut dyn vst3_sys::vst::IPluginFactory {
+    let factory = Box::new(crate::plugin::factory::PluginFactoryImpl);
+    Box::into_raw(factory) as *mut dyn vst3_sys::vst::IPluginFactory
+}
+
+// Re-export from vst3-sys
+use vst3_sys::vst::IPluginFactory;

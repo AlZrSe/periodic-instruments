@@ -1,6 +1,6 @@
 //! Parameter definitions and handling for Periodic Instruments VST3 plugin
 
-use nih_plug::prelude::*;
+use vst3_sys::vst::kParamTypeUnknown;
 use std::sync::atomic::{AtomicU32, AtomicF32, Ordering};
 
 /// Number of parameters: Element Selector (1-94) + 4 Macro knobs
@@ -86,45 +86,7 @@ impl Default for ParameterValues {
     }
 }
 
-/// Create nih-plug parameter objects for each parameter
-pub fn create_parameters() -> Vec<Arc<dyn PluginParameter>> {
-    use nih_plug::params::{FloatParam, IntParam, ParamFlags};
-    use std::sync::Arc;
-
-    let element_selector = Arc::new(IntParam::new(
-        "Element Selector",
-        1,
-        IntRange::Linear { min: 1, max: 94 },
-    ));
-
-    let mass = Arc::new(FloatParam::new(
-        "Mass",
-        0.5,
-        FloatRange::Linear { min: 0.0, max: 1.0 },
-    ).with_flags(ParamFlags::AUTOMATABLE | ParamFlags::CAN_RAMP));
-
-    let reactivity = Arc::new(FloatParam::new(
-        "Reactivity",
-        0.5,
-        FloatRange::Linear { min: 0.0, max: 1.0 },
-    ).with_flags(ParamFlags::AUTOMATABLE | ParamFlags::CAN_RAMP));
-
-    let state = Arc::new(FloatParam::new(
-        "State",
-        0.5,
-        FloatRange::Linear { min: 0.0, max: 1.0 },
-    ).with_flags(ParamFlags::AUTOMATABLE | ParamFlags::CAN_RAMP));
-
-    let radiance = Arc::new(FloatParam::new(
-        "Radiance",
-        0.5,
-        FloatRange::Linear { min: 0.0, max: 1.0 },
-    ).with_flags(ParamFlags::AUTOMATABLE | ParamFlags::CAN_RAMP));
-
-    vec![element_selector, mass, reactivity, state, radiance]
-}
-
-/// Legacy parameter info for compatibility
+/// Parameter information for VST3 host (legacy compatibility)
 pub fn parameter_info(index: u32) -> Option<ParameterInfoLegacy> {
     let (id, name, min, max, default, step_count) = match index {
         0 => (0, "Element Selector", 1.0, 94.0, 1.0, Some(94)),
@@ -147,4 +109,90 @@ pub struct ParameterInfoLegacy {
     pub max: f64,
     pub default: f64,
     pub step_count: Option<u32>,
+}
+
+/// VST3 parameter information structure for host communication
+#[repr(C)]
+pub struct VstParameterInfo {
+    pub id: i32,
+    pub title: [i8; 64],
+    pub short_title: [i8; 64],
+    pub units: [i8; 64],
+    pub step_count: i32,
+    pub default_normalized_value: f64,
+    pub unit_id: i32,
+    pub flags: i32,
+    pub type_: i32,
+}
+
+impl VstParameterInfo {
+    pub fn new(index: u32) -> Self {
+        let (title, short_title, units, min, max, default, step_count, flags) = match index {
+            0 => (
+                "Element Selector", "Element", "",
+                1.0, 94.0, 1.0, 94,
+                vst3_sys::vst::ParameterInfo::kCanAutomate | vst3_sys::vst::ParameterInfo::kIsReadOnly,
+            ),
+            1 => (
+                "Mass", "Mass", "",
+                0.0, 1.0, 0.5, 0,
+                vst3_sys::vst::ParameterInfo::kCanAutomate,
+            ),
+            2 => (
+                "Reactivity", "React", "",
+                0.0, 1.0, 0.5, 0,
+                vst3_sys::vst::ParameterInfo::kCanAutomate,
+            ),
+            3 => (
+                "State", "State", "",
+                0.0, 1.0, 0.5, 0,
+                vst3_sys::vst::ParameterInfo::kCanAutomate,
+            ),
+            4 => (
+                "Radiance", "Rad", "",
+                0.0, 1.0, 0.5, 0,
+                vst3_sys::vst::ParameterInfo::kCanAutomate,
+            ),
+            _ => return Self::empty(),
+        };
+
+        let mut info = Self {
+            id: index as i32,
+            title: [0; 64],
+            short_title: [0; 64],
+            units: [0; 64],
+            step_count,
+            default_normalized_value: (default - min) / (max - min),
+            unit_id: 0,
+            flags,
+            type_: kParamTypeUnknown as i32,
+        };
+
+        // Copy strings (truncated to 63 chars + null)
+        for (i, c) in title.as_bytes().iter().take(63).enumerate() {
+            info.title[i] = *c as i8;
+        }
+        for (i, c) in short_title.as_bytes().iter().take(63).enumerate() {
+            info.short_title[i] = *c as i8;
+        }
+        for (i, c) in units.as_bytes().iter().take(63).enumerate() {
+            info.units[i] = *c as i8;
+        }
+
+        info
+    }
+
+    fn empty() -> Self {
+        Self {
+            id: -1,
+            title: [0; 64],
+            short_title: [0; 64],
+            units: [0; 64],
+            step_count: 0,
+            default_normalized_value: 0.0,
+            unit_id: 0,
+            flags: 0,
+            type_: kParamTypeUnknown as i32,
+        }
+    }
 }
