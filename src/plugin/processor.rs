@@ -6,8 +6,8 @@
 //! - Variable block size and sample rate support
 //! - Bypass handling
 
-use nice_plug::prelude::*;
-use crate::plugin::parameters::{ParameterValues, ParameterId, PARAMETER_COUNT};
+use vst3::prelude::*;
+use crate::plugin::parameters::ParameterValues;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
 
@@ -64,26 +64,26 @@ impl PeriodicInstrumentsProcessor {
     }
 }
 
-impl PluginProcessor for PeriodicInstrumentsProcessor {
-    fn initialize(&mut self, _context: &mut InitializeContext) -> Result<(), PluginError> {
+impl vst3::Processor for PeriodicInstrumentsProcessor {
+    fn initialize(&mut self, _context: &mut vst3::InitializeContext) -> Result<(), vst3::Error> {
         self.active.store(true, Ordering::Relaxed);
         tracing::info!("Processor initialized at {} Hz, max block {}", self.sample_rate, self.max_block_size);
         Ok(())
     }
     
-    fn setup_processing(&mut self, setup: &ProcessingSetup) -> Result<(), PluginError> {
+    fn setup_processing(&mut self, setup: &vst3::ProcessingSetup) -> Result<(), vst3::Error> {
         self.sample_rate = setup.sample_rate;
         self.max_block_size = setup.max_samples_per_block;
         
         if self.max_block_size as usize > MAX_BLOCK_SIZE {
-            return Err(PluginError::BufferTooSmall);
+            return Err(vst3::Error::BufferTooSmall);
         }
         
         tracing::info!("Processing setup: {} Hz, max block {}", self.sample_rate, self.max_block_size);
         Ok(())
     }
     
-    fn set_active(&mut self, active: bool) -> Result<(), PluginError> {
+    fn set_active(&mut self, active: bool) -> Result<(), vst3::Error> {
         self.active.store(active, Ordering::Relaxed);
         if active {
             tracing::info!("Processor activated");
@@ -93,14 +93,13 @@ impl PluginProcessor for PeriodicInstrumentsProcessor {
         Ok(())
     }
     
-    fn process(&mut self, context: &mut ProcessContext) -> Result<(), PluginError> {
+    fn process(&mut self, context: &mut vst3::ProcessContext) -> Result<(), vst3::Error> {
         // Check if processing is active
         if !self.active.load(Ordering::Relaxed) {
             return Ok(());
         }
         
         let num_samples = context.num_samples();
-        let num_output_channels = context.outputs().len();
         
         // Get bypass state
         let bypassed = self.bypassed.load(Ordering::Relaxed);
@@ -139,7 +138,7 @@ impl PluginProcessor for PeriodicInstrumentsProcessor {
     }
 }
 
-/// Audio buffer wrapper for nice-plug
+/// Audio buffer wrapper for vst3
 #[derive(Debug)]
 pub struct AudioBuffer<T> {
     channels: Vec<Vec<T>>,

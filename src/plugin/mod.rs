@@ -4,14 +4,14 @@
 //! - Plugin factory and FUID registration
 //! - Parameter definitions (5 parameters)
 //! - Audio processor (allocation-free)
-//! - GUI editor registration via nice-plug/iced
+//! - GUI editor registration via vst3/iced
 
 pub mod factory;
 pub mod parameters;
 pub mod processor;
 pub mod editor;
 
-use nice_plug::prelude::*;
+use vst3::prelude::*;
 use std::sync::Arc;
 
 // Re-export main types
@@ -39,23 +39,10 @@ pub const PLUGIN_CLASS_ID: [u8; 16] = [
 
 /// Plugin entry point — called by VST3 host
 #[no_mangle]
-pub extern "C" fn GetPluginFactory() -> *mut dyn PluginFactory {
+pub extern "C" fn GetPluginFactory() -> *mut dyn vst3::Factory {
     let factory = Box::new(PeriodicInstrumentsFactory::new());
-    Box::into_raw(factory) as *mut dyn PluginFactory
+    Box::into_raw(factory) as *mut dyn vst3::Factory
 }
 
-/// Plugin descriptor for nice-plug
-pub struct PeriodicInstrumentsPlugin;
-
-impl Plugin for PeriodicInstrumentsPlugin {
-    const NAME: &'static str = PLUGIN_NAME;
-    const VENDOR: &'static str = PLUGIN_VENDOR;
-    const VERSION: &'static str = PLUGIN_VERSION;
-    const CATEGORY: &'static str = PLUGIN_CATEGORY;
-    const UNIQUE_ID: &'static str = PLUGIN_UNIQUE_ID;
-    const CLASS_ID: [u8; 16] = PLUGIN_CLASS_ID;
-    
-    type Factory = PeriodicInstrumentsFactory;
-    type Processor = PeriodicInstrumentsProcessor;
-    type Editor = PeriodicInstrumentsEditor;
-}
+// VST3 plugin declaration using vst3 crate macros
+vst3::plugin_entry!(PeriodicInstrumentsFactory);

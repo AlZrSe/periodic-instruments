@@ -7,7 +7,7 @@
 //! 3: State (0.0-1.0, default 0.5)
 //! 4: Radiance (0.0-1.0, default 0.5)
 
-use nice_plug::prelude::*;
+use vst3::prelude::*;
 use atomic_float::AtomicF32;
 use std::sync::atomic::AtomicU8;
 use std::sync::Arc;

@@ -20,7 +20,6 @@ pub mod plugin;
 
 // Re-export main plugin types for VST3 entry point
 pub use plugin::{
-    PeriodicInstrumentsPlugin,
     PeriodicInstrumentsFactory,
     PeriodicInstrumentsProcessor,
     PeriodicInstrumentsEditor,
@@ -38,6 +37,7 @@ pub use plugin::parameters::{
     ParameterValues,
     PARAMETER_COUNT,
     parameter_info,
+    ParameterInfo,
 };
 
 /// Plugin version as semver string
@@ -49,8 +49,7 @@ pub fn init_logging() {
     
     fmt()
         .with_env_filter(EnvFilter::from_default_env()
-            .add_directive("periodic_instruments=debug".parse().unwrap())
-            .add_directive("nice_plug=info".parse().unwrap()))
+            .add_directive("periodic_instruments=debug".parse().unwrap()))
         .with_target(false)
         .with_thread_ids(false)
         .with_thread_names(false)
@@ -84,7 +83,7 @@ mod tests {
             assert_eq!(info.min_value, 0.0);
             assert_eq!(info.max_value, 1.0);
             assert_eq!(info.default_value, 0.5);
-            assert!(info.flags.contains(nice_plug::prelude::ParameterFlags::AUTOMATABLE));
+            assert!(info.flags.contains(vst3::prelude::ParameterFlags::AUTOMATABLE));
         }
     }
     

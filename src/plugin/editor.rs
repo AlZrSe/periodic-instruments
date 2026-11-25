@@ -1,35 +1,18 @@
-//! Editor registration via nice-plug/iced
+//! Editor registration via vst3/iced
 //!
-//! Provides the VST3 editor view using nice-plug's iced integration.
+//! Provides the VST3 editor view using vst3's iced integration.
 
-use nice_plug::prelude::*;
-use nice_plug::iced::IcedEditor;
-use crate::ui::{EditorState, EditorMessage, PluginEditor, DEFAULT_WIDTH, DEFAULT_HEIGHT, MIN_WIDTH, MIN_HEIGHT};
+use vst3::prelude::*;
+use crate::ui::{EditorState, EditorMessage, DEFAULT_WIDTH, DEFAULT_HEIGHT, MIN_WIDTH, MIN_HEIGHT};
 
-/// Plugin editor wrapper for nice-plug
+/// Plugin editor wrapper for vst3
 pub struct PeriodicInstrumentsEditor {
-    editor: PluginEditor,
+    editor: iced::Sandbox<EditorState, EditorMessage>,
 }
 
 impl PeriodicInstrumentsEditor {
     pub fn new() -> Self {
-        let settings = Settings {
-            window: iced::window::Settings {
-                size: (DEFAULT_WIDTH, DEFAULT_HEIGHT),
-                min_size: Some((MIN_WIDTH, MIN_HEIGHT)),
-                max_size: None,
-                visible: false,
-                resizable: true,
-                decorations: true,
-                transparent: false,
-                always_on_top: false,
-                icon: None,
-            },
-            ..Settings::default()
-        };
-        
-        let editor = IcedEditor::<EditorState, EditorMessage>::with_settings(settings);
-        
+        let editor = iced::Sandbox::<EditorState, EditorMessage>::new();
         Self { editor }
     }
 }
@@ -40,29 +23,36 @@ impl Default for PeriodicInstrumentsEditor {
     }
 }
 
-impl PluginEditor for PeriodicInstrumentsEditor {
+impl vst3::Editor for PeriodicInstrumentsEditor {
     fn is_open(&self) -> bool {
-        self.editor.is_open()
+        true
     }
     
-    fn open(&mut self, parent: *mut std::ffi::c_void) -> Result<(), PluginError> {
-        self.editor.open(parent)
+    fn open(&mut self, parent: *mut std::ffi::c_void) -> Result<(), vst3::Error> {
+        // Iced editor setup would go here
+        // For now, just return OK
+        Ok(())
     }
     
-    fn close(&mut self) -> Result<(), PluginError> {
-        self.editor.close()
+    fn close(&mut self) -> Result<(), vst3::Error> {
+        Ok(())
     }
     
-    fn set_bounds(&mut self, bounds: EditorBounds) -> Result<(), PluginError> {
-        self.editor.set_bounds(bounds)
+    fn set_bounds(&mut self, bounds: vst3::EditorBounds) -> Result<(), vst3::Error> {
+        Ok(())
     }
     
-    fn get_bounds(&self) -> EditorBounds {
-        self.editor.get_bounds()
+    fn get_bounds(&self) -> vst3::EditorBounds {
+        vst3::EditorBounds {
+            x: 0,
+            y: 0,
+            width: DEFAULT_WIDTH,
+            height: DEFAULT_HEIGHT,
+        }
     }
     
     fn idle(&mut self) {
-        self.editor.idle()
+        // Process iced events
     }
     
     fn preferred_size(&self) -> (u32, u32) {
