@@ -39,6 +39,7 @@ pub use plugin::parameters::{
     PARAMETER_COUNT,
     parameter_info,
     create_parameters,
+    ParameterInfoLegacy,
 };
 
 /// Plugin version as semver string
@@ -70,7 +71,7 @@ mod tests {
     #[test]
     fn test_parameter_info_element_selector() {
         let info = parameter_info(0).expect("Parameter 0 should exist");
-        assert_eq!(info.title, "Element Selector");
+        assert_eq!(info.name, "Element Selector");
         assert_eq!(info.step_count, Some(94));
     }
     
@@ -78,8 +79,9 @@ mod tests {
     fn test_parameter_info_macro_knobs() {
         for i in 1..5 {
             let info = parameter_info(i).expect(&format!("Parameter {i} should exist"));
-            // Vst3ParameterInfo uses default_normalized_value, not default_value
-            assert_eq!(info.default_normalized_value, 0.5);
+            assert_eq!(info.min, 0.0);
+            assert_eq!(info.max, 1.0);
+            assert_eq!(info.default, 0.5);
         }
     }
     

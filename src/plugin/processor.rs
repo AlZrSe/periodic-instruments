@@ -1,6 +1,6 @@
 //! Audio processor implementation for Periodic Instruments VST3 plugin
 
-use vst3::{Processor, AudioBus, AudioBusType, SpeakerArrangement, ProcessData, ProcessMode, SymbolicSampleSizes, Error};
+use nih_plug::prelude::*;
 use std::sync::Arc;
 use crate::plugin::parameters::ParameterValues;
 
@@ -17,10 +17,10 @@ pub struct PeriodicInstrumentsProcessor {
 }
 
 impl PeriodicInstrumentsProcessor {
-    pub fn new() -> Self {
+    pub fn new(sample_rate: f32) -> Self {
         Self {
             param_values: Arc::new(ParameterValues::new()),
-            sample_rate: 44100.0,
+            sample_rate,
             max_block_size: MAX_BLOCK_SIZE,
             bypass: false,
             silence_buffer: vec![0.0f32; MAX_BLOCK_SIZE],
@@ -32,113 +32,45 @@ impl PeriodicInstrumentsProcessor {
     }
 }
 
-impl Default for PeriodicInstrumentsProcessor {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
 impl Processor for PeriodicInstrumentsProcessor {
-    fn initialize(&mut self, _context: vst3::InitializeContext) -> Result<(), Error> {
-        Ok(())
-    }
-
-    fn terminate(&mut self) -> Result<(), Error> {
-        Ok(())
-    }
-
-    fn setup_processing(&mut self, setup: vst3::ProcessingSetup) -> Result<(), Error> {
-        if setup.max_samples_per_block > MAX_BLOCK_SIZE as u32 {
-            return Err(Error::InvalidArgument);
-        }
-        if setup.symbolic_sample_size != SymbolicSampleSizes::Sample32 {
-            return Err(Error::InvalidArgument);
-        }
-        
-        self.sample_rate = setup.sample_rate;
-        self.max_block_size = setup.max_samples_per_block as usize;
-        self.silence_buffer.resize(self.max_block_size, 0.0);
-        Ok(())
-    }
-
-    fn set_active(&mut self, active: bool) -> Result<(), Error> {
-        if active {
-            // Reset state on activation
-        }
-        Ok(())
-    }
-
-    fn process(&mut self, data: &mut ProcessData) -> Result<(), Error> {
+    fn process(&mut self, buffer: &mut Buffer, _context: &mut ProcessContext) -> Result<(), PluginError> {
         // Handle bypass
         if self.bypass {
             // Pass-through: copy inputs to outputs
-            if let (Some(inputs), Some(outputs)) = (data.inputs.as_mut(), data.outputs.as_mut()) {
-                if let (Some(in_bus), Some(out_bus)) = (inputs.first_mut(), outputs.first_mut()) {
-                    let num_samples = data.num_samples as usize;
-                    if num_samples <= in_bus.channel_buffers32.len() && num_samples <= out_bus.channel_buffers32.len() {
-                        for ch in 0..in_bus.channel_buffers32.len().min(out_bus.channel_buffers32.len()) {
-                            out_bus.channel_buffers32[ch][..num_samples]
-                                .copy_from_slice(&in_bus.channel_buffers32[ch][..num_samples]);
-                        }
-                    }
+            if let (Some(inputs), Some(outputs)) = (buffer.inputs(), buffer.outputs()) {
+                for (in_ch, out_ch) in inputs.iter().zip(outputs.iter_mut()) {
+                    out_ch.copy_from_slice(in_ch);
                 }
             }
             return Ok(());
         }
 
         // Instrument mode: output silence (foundation build)
-        if let Some(outputs) = data.outputs.as_mut() {
-            if let Some(out_bus) = outputs.first_mut() {
-                let num_samples = data.num_samples as usize;
-                for ch in 0..out_bus.channel_buffers32.len() {
-                    if num_samples <= out_bus.channel_buffers32[ch].len() {
-                        out_bus.channel_buffers32[ch][..num_samples].fill(0.0);
-                    }
-                }
+        if let Some(outputs) = buffer.outputs() {
+            for out_ch in outputs.iter_mut() {
+                out_ch.fill(0.0);
             }
         }
 
         Ok(())
     }
 
-    fn can_process_sample_size(&self, symbolic_sample_size: SymbolicSampleSizes) -> Result<(), Error> {
-        if symbolic_sample_size == SymbolicSampleSizes::Sample32 {
-            Ok(())
-        } else {
-            Err(Error::InvalidArgument)
-        }
-    }
-
-    fn get_bus_count(&self, bus_type: AudioBusType, _is_input: bool) -> u32 {
-        match bus_type {
-            AudioBusType::Audio => 1, // Stereo in/out
-            _ => 0,
-        }
-    }
-
-    fn get_bus_info(&self, bus_type: AudioBusType, is_input: bool, index: u32) -> Option<AudioBus> {
-        if index == 0 && bus_type == AudioBusType::Audio {
-            Some(AudioBus {
-                name: if is_input { "Audio Input".to_string() } else { "Audio Output".to_string() },
-                bus_type,
-                flags: vst3::BusFlags::DEFAULT_ACTIVE,
-                channel_count: 2, // Stereo
-                arrangement: SpeakerArrangement::Stereo,
-            })
-        } else {
-            None
-        }
-    }
-
-    fn set_process_mode(&mut self, _mode: ProcessMode) -> Result<(), Error> {
+    fn initialize(&mut self, context: &InitializeContext) -> Result<(), PluginError> {
+        self.sample_rate = context.sample_rate;
+        self.max_block_size = context.max_block_size;
+        self.silence_buffer.resize(self.max_block_size, 0.0);
         Ok(())
+    }
+
+    fn reset(&mut self) {
+        // Reset state
     }
 
     fn set_bypass(&mut self, bypass: bool) {
         self.bypass = bypass;
     }
 
-    fn get_tail_size(&self) -> u32 {
+    fn get_tail_size(&self) -> usize {
         0 // No tail for silence output
     }
 }

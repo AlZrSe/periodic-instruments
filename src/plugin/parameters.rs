@@ -1,8 +1,7 @@
 //! Parameter definitions and handling for Periodic Instruments VST3 plugin
 
-use std::sync::atomic::{AtomicU32, Ordering};
-use atomic_float::AtomicF32;
-use vst3::{Parameter, ParameterFlags, ParameterInfo as Vst3ParameterInfo};
+use nih_plug::prelude::*;
+use std::sync::atomic::{AtomicU32, AtomicF32, Ordering};
 
 /// Number of parameters: Element Selector (1-94) + 4 Macro knobs
 pub const PARAMETER_COUNT: usize = 5;
@@ -55,7 +54,6 @@ impl ParameterValues {
         let clamped = value.clamp(0.0, 1.0);
         match ParameterId::from_index(index) {
             Some(ParameterId::ElementSelector) => {
-                // Map 0.0-1.0 to 1-94
                 let element = ((clamped * 93.0) + 1.0) as u32;
                 self.element_selector.store(element.min(94).max(1), Ordering::Relaxed);
             }
@@ -88,181 +86,65 @@ impl Default for ParameterValues {
     }
 }
 
-/// Parameter information for VST3 host
-pub fn parameter_info(index: u32) -> Option<Vst3ParameterInfo> {
-    let (name, min, max, default, step_count, flags) = match index {
-        0 => (
-            "Element Selector",
-            1.0,
-            94.0,
-            1.0,
-            Some(94),
-            ParameterFlags::AUTOMATABLE | ParameterFlags::CAN_RAMP,
-        ),
-        1 => (
-            "Mass",
-            0.0,
-            1.0,
-            0.5,
-            None,
-            ParameterFlags::AUTOMATABLE | ParameterFlags::CAN_RAMP,
-        ),
-        2 => (
-            "Reactivity",
-            0.0,
-            1.0,
-            0.5,
-            None,
-            ParameterFlags::AUTOMATABLE | ParameterFlags::CAN_RAMP,
-        ),
-        3 => (
-            "State",
-            0.0,
-            1.0,
-            0.5,
-            None,
-            ParameterFlags::AUTOMATABLE | ParameterFlags::CAN_RAMP,
-        ),
-        4 => (
-            "Radiance",
-            0.0,
-            1.0,
-            0.5,
-            None,
-            ParameterFlags::AUTOMATABLE | ParameterFlags::CAN_RAMP,
-        ),
+/// Create nih-plug parameter objects for each parameter
+pub fn create_parameters() -> Vec<Arc<dyn PluginParameter>> {
+    use nih_plug::params::{FloatParam, IntParam, ParamFlags};
+    use std::sync::Arc;
+
+    let element_selector = Arc::new(IntParam::new(
+        "Element Selector",
+        1,
+        IntRange::Linear { min: 1, max: 94 },
+    ));
+
+    let mass = Arc::new(FloatParam::new(
+        "Mass",
+        0.5,
+        FloatRange::Linear { min: 0.0, max: 1.0 },
+    ).with_flags(ParamFlags::AUTOMATABLE | ParamFlags::CAN_RAMP));
+
+    let reactivity = Arc::new(FloatParam::new(
+        "Reactivity",
+        0.5,
+        FloatRange::Linear { min: 0.0, max: 1.0 },
+    ).with_flags(ParamFlags::AUTOMATABLE | ParamFlags::CAN_RAMP));
+
+    let state = Arc::new(FloatParam::new(
+        "State",
+        0.5,
+        FloatRange::Linear { min: 0.0, max: 1.0 },
+    ).with_flags(ParamFlags::AUTOMATABLE | ParamFlags::CAN_RAMP));
+
+    let radiance = Arc::new(FloatParam::new(
+        "Radiance",
+        0.5,
+        FloatRange::Linear { min: 0.0, max: 1.0 },
+    ).with_flags(ParamFlags::AUTOMATABLE | ParamFlags::CAN_RAMP));
+
+    vec![element_selector, mass, reactivity, state, radiance]
+}
+
+/// Legacy parameter info for compatibility
+pub fn parameter_info(index: u32) -> Option<ParameterInfoLegacy> {
+    let (id, name, min, max, default, step_count) = match index {
+        0 => (0, "Element Selector", 1.0, 94.0, 1.0, Some(94)),
+        1 => (1, "Mass", 0.0, 1.0, 0.5, None),
+        2 => (2, "Reactivity", 0.0, 1.0, 0.5, None),
+        3 => (3, "State", 0.0, 1.0, 0.5, None),
+        4 => (4, "Radiance", 0.0, 1.0, 0.5, None),
         _ => return None,
     };
 
-    Some(Vst3ParameterInfo {
-        id: index,
-        title: name.to_string(),
-        short_title: name.to_string(),
-        units: "".to_string(),
-        step_count,
-        default_normalized_value: (default - min) / (max - min),
-        unit_id: 0,
-        flags,
-    })
+    Some(ParameterInfoLegacy { id, name: name.to_string(), min, max, default, step_count })
 }
 
-/// VST3 Parameter implementations for each parameter
-pub struct ElementSelectorParameter {
-    values: std::sync::Arc<ParameterValues>,
-}
-
-impl Parameter for ElementSelectorParameter {
-    fn get_id(&self) -> u32 { 0 }
-    fn get_title(&self) -> String { "Element Selector".to_string() }
-    fn get_short_title(&self) -> String { "Element".to_string() }
-    fn get_units(&self) -> String { "".to_string() }
-    fn get_step_count(&self) -> u32 { 94 }
-    fn get_default_normalized_value(&self) -> f64 { 0.0 }
-    fn get_unit_id(&self) -> u32 { 0 }
-    fn get_flags(&self) -> ParameterFlags { ParameterFlags::AUTOMATABLE | ParameterFlags::CAN_RAMP }
-    fn to_normalized(&self, plain_value: f64) -> f64 { (plain_value - 1.0) / 93.0 }
-    fn to_plain(&self, normalized_value: f64) -> f64 { normalized_value * 93.0 + 1.0 }
-    fn get_normalized(&self) -> f64 { 
-        let val = self.values.element_selector.load(Ordering::Relaxed);
-        ((val as f64) - 1.0) / 93.0 
-    }
-    fn set_normalized(&self, normalized: f64) {
-        let element = ((normalized * 93.0) + 1.0) as u32;
-        self.values.element_selector.store(element.min(94).max(1), Ordering::Relaxed);
-    }
-}
-
-pub struct MassParameter {
-    values: std::sync::Arc<ParameterValues>,
-}
-
-impl Parameter for MassParameter {
-    fn get_id(&self) -> u32 { 1 }
-    fn get_title(&self) -> String { "Mass".to_string() }
-    fn get_short_title(&self) -> String { "Mass".to_string() }
-    fn get_units(&self) -> String { "".to_string() }
-    fn get_step_count(&self) -> u32 { 0 }
-    fn get_default_normalized_value(&self) -> f64 { 0.5 }
-    fn get_unit_id(&self) -> u32 { 0 }
-    fn get_flags(&self) -> ParameterFlags { ParameterFlags::AUTOMATABLE | ParameterFlags::CAN_RAMP }
-    fn to_normalized(&self, plain_value: f64) -> f64 { plain_value }
-    fn to_plain(&self, normalized_value: f64) -> f64 { normalized_value }
-    fn get_normalized(&self) -> f64 { self.values.mass.load(Ordering::Relaxed) as f64 }
-    fn set_normalized(&self, normalized: f64) {
-        self.values.mass.store(normalized as f32, Ordering::Relaxed);
-    }
-}
-
-pub struct ReactivityParameter {
-    values: std::sync::Arc<ParameterValues>,
-}
-
-impl Parameter for ReactivityParameter {
-    fn get_id(&self) -> u32 { 2 }
-    fn get_title(&self) -> String { "Reactivity".to_string() }
-    fn get_short_title(&self) -> String { "React".to_string() }
-    fn get_units(&self) -> String { "".to_string() }
-    fn get_step_count(&self) -> u32 { 0 }
-    fn get_default_normalized_value(&self) -> f64 { 0.5 }
-    fn get_unit_id(&self) -> u32 { 0 }
-    fn get_flags(&self) -> ParameterFlags { ParameterFlags::AUTOMATABLE | ParameterFlags::CAN_RAMP }
-    fn to_normalized(&self, plain_value: f64) -> f64 { plain_value }
-    fn to_plain(&self, normalized_value: f64) -> f64 { normalized_value }
-    fn get_normalized(&self) -> f64 { self.values.reactivity.load(Ordering::Relaxed) as f64 }
-    fn set_normalized(&self, normalized: f64) {
-        self.values.reactivity.store(normalized as f32, Ordering::Relaxed);
-    }
-}
-
-pub struct StateParameter {
-    values: std::sync::Arc<ParameterValues>,
-}
-
-impl Parameter for StateParameter {
-    fn get_id(&self) -> u32 { 3 }
-    fn get_title(&self) -> String { "State".to_string() }
-    fn get_short_title(&self) -> String { "State".to_string() }
-    fn get_units(&self) -> String { "".to_string() }
-    fn get_step_count(&self) -> u32 { 0 }
-    fn get_default_normalized_value(&self) -> f64 { 0.5 }
-    fn get_unit_id(&self) -> u32 { 0 }
-    fn get_flags(&self) -> ParameterFlags { ParameterFlags::AUTOMATABLE | ParameterFlags::CAN_RAMP }
-    fn to_normalized(&self, plain_value: f64) -> f64 { plain_value }
-    fn to_plain(&self, normalized_value: f64) -> f64 { normalized_value }
-    fn get_normalized(&self) -> f64 { self.values.state.load(Ordering::Relaxed) as f64 }
-    fn set_normalized(&self, normalized: f64) {
-        self.values.state.store(normalized as f32, Ordering::Relaxed);
-    }
-}
-
-pub struct RadianceParameter {
-    values: std::sync::Arc<ParameterValues>,
-}
-
-impl Parameter for RadianceParameter {
-    fn get_id(&self) -> u32 { 4 }
-    fn get_title(&self) -> String { "Radiance".to_string() }
-    fn get_short_title(&self) -> String { "Rad".to_string() }
-    fn get_units(&self) -> String { "".to_string() }
-    fn get_step_count(&self) -> u32 { 0 }
-    fn get_default_normalized_value(&self) -> f64 { 0.5 }
-    fn get_unit_id(&self) -> u32 { 0 }
-    fn get_flags(&self) -> ParameterFlags { ParameterFlags::AUTOMATABLE | ParameterFlags::CAN_RAMP }
-    fn to_normalized(&self, plain_value: f64) -> f64 { plain_value }
-    fn to_plain(&self, normalized_value: f64) -> f64 { normalized_value }
-    fn get_normalized(&self) -> f64 { self.values.radiance.load(Ordering::Relaxed) as f64 }
-    fn set_normalized(&self, normalized: f64) {
-        self.values.radiance.store(normalized as f32, Ordering::Relaxed);
-    }
-}
-
-/// Create all parameter implementations
-pub fn create_parameters(values: std::sync::Arc<ParameterValues>) -> Vec<Box<dyn Parameter>> {
-    vec![
-        Box::new(ElementSelectorParameter { values: values.clone() }),
-        Box::new(MassParameter { values: values.clone() }),
-        Box::new(ReactivityParameter { values: values.clone() }),
-        Box::new(StateParameter { values: values.clone() }),
-        Box::new(RadianceParameter { values }),
-    ]
+/// Legacy parameter info struct for compatibility with existing code
+#[derive(Debug, Clone)]
+pub struct ParameterInfoLegacy {
+    pub id: u32,
+    pub name: String,
+    pub min: f64,
+    pub max: f64,
+    pub default: f64,
+    pub step_count: Option<u32>,
 }
