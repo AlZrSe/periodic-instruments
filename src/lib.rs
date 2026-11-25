@@ -16,9 +16,14 @@ pub mod core;
 pub mod elements;
 pub mod fx;
 pub mod ui;
+
+// Rust VST3 plugin implementation (optional, disabled by default)
+// The primary VST3 implementation is the C++ plugin in src/vst3/
+#[cfg(feature = "rust-plugin")]
 pub mod plugin;
 
 // Re-export main plugin types for VST3 entry point
+#[cfg(feature = "rust-plugin")]
 pub use plugin::{
     PLUGIN_NAME,
     PLUGIN_VENDOR,
@@ -29,6 +34,7 @@ pub use plugin::{
 };
 
 // Re-export parameter types
+#[cfg(feature = "rust-plugin")]
 pub use plugin::parameters::{
     PARAMETER_COUNT,
     ParameterValues,
@@ -52,7 +58,7 @@ pub fn init_logging() {
         .init();
 }
 
-#[cfg(test)]
+#[cfg(all(test, feature = "rust-plugin"))]
 mod tests {
     use super::*;
     
