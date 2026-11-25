@@ -18,7 +18,7 @@ crate-type = ["cdylib", "rlib"]
 vst3 = "0.3"
 
 # GUI framework
-iced = { version = "0.12", features = ["core", "runtime", "widgets", "text", "graphics", "wgpu"] }
+iced = { version = "0.12", features = ["default", "wgpu", "tokio"] }
 
 # Atomic floats for lock-free parameter sharing
 atomic_float = "1"
@@ -49,10 +49,6 @@ opt-level = 3
 codegen-units = 1
 strip = true
 panic = "abort"
-
-[profile.release.with-debug]
-inherits = "release"
-debug = true
 
 [features]
 default = ["vst3"]
