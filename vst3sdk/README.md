@@ -1,6 +1,6 @@
-# Welcome to VST SDK 3 base
+# Welcome to VST 3 SDK Interfaces
 
-Here you can find some helper classes useful for developing **VST 3** plug-ins.
+Here are located all **VST 3** interfaces definitions (including VST Component/Controller, UI, Test).
 
 ## License & Usage guidelines
 
