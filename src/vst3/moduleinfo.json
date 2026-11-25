@@ -1,0 +1,28 @@
+{
+  "name": "Periodic Instruments",
+  "vendor": "AlZrSe",
+  "version": "0.1.0",
+  "cids": [
+    {
+      "cid": "706572696f646963496e737472756d00",
+      "name": "Periodic Instruments",
+      "category": "audio",
+      "subcategories": ["Instrument|Synth"],
+      "vendor": "AlZrSe",
+      "version": "0.1.0",
+      "sdkVersion": "VST 3.7.0",
+      "flags": 0,
+      "classType": "audio"
+    },
+    {
+      "cid": "706572696f646963496e737472430000",
+      "name": "Periodic Instruments Controller",
+      "category": "controller",
+      "vendor": "AlZrSe",
+      "version": "0.1.0",
+      "sdkVersion": "VST 3.7.0",
+      "flags": 0,
+      "classType": "controller"
+    }
+  ]
+}

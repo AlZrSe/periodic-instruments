@@ -11,13 +11,10 @@ keywords = ["vst3", "synthesizer", "audio-plugin", "iced"]
 
 [lib]
 name = "periodic_instruments"
-crate-type = ["cdylib", "rlib"]
+crate-type = ["staticlib", "rlib"]
 
 [dependencies]
-# VST3 SDK bindings (official low-level bindings)
-vst3-sys = { version = "0.3", features = ["plugin"] }
-
-# GUI framework
+# GUI framework (for future UI implementation)
 iced = { version = "0.12", features = ["default", "wgpu", "tokio"] }
 
 # Atomic floats for lock-free parameter sharing
@@ -41,7 +38,7 @@ serde_json = "1.0"
 dirs = "5.0"
 
 [build-dependencies]
-vst3-sys = { version = "0.3", features = ["plugin"] }
+cc = "1.0"
 
 [profile.release]
 lto = true
