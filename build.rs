@@ -20,11 +20,10 @@ fn main() {
     build.cpp(true)
          .flag_if_supported("-std=c++17")
          .flag_if_supported("/std:c++17")
-         .define("VST_VERSION_STR", "\"0.1.0\"")
-         .define("NDEBUG")
+         .define("VST_VERSION_STR", Some("\"0.1.0\""))
+         .define("NDEBUG", Some("1"))
          .opt_level(3)
-         .pic(true)
-         .shared_flag(true);
+         .pic(true);
 
     // Add VST3 SDK include paths
     if let Ok(vst3_sdk) = env::var("VST3_SDK") {
@@ -40,9 +39,10 @@ fn main() {
                 r"C:\Program Files (x86)\Steinberg\VST3 SDK",
             ] {
                 if Path::new(path).exists() {
-                    build.include(path.join("pluginterfaces"));
-                    build.include(Path::new(path).join("public.sdk").join("source"));
-                    build.include(Path::new(path).join("base").join("source"));
+                    let p = PathBuf::from(path);
+                    build.include(p.join("pluginterfaces"));
+                    build.include(p.join("public.sdk").join("source"));
+                    build.include(p.join("base").join("source"));
                     break;
                 }
             }
@@ -53,9 +53,10 @@ fn main() {
                 "/usr/include/vst3sdk",
             ] {
                 if Path::new(path).exists() {
-                    build.include(Path::new(path).join("pluginterfaces"));
-                    build.include(Path::new(path).join("public.sdk").join("source"));
-                    build.include(Path::new(path).join("base").join("source"));
+                    let p = PathBuf::from(path);
+                    build.include(p.join("pluginterfaces"));
+                    build.include(p.join("public.sdk").join("source"));
+                    build.include(p.join("base").join("source"));
                     break;
                 }
             }
@@ -65,9 +66,10 @@ fn main() {
                 "/Library/Audio/Plug-Ins/VST3 SDK",
             ] {
                 if Path::new(path).exists() {
-                    build.include(Path::new(path).join("pluginterfaces"));
-                    build.include(Path::new(path).join("public.sdk").join("source"));
-                    build.include(Path::new(path).join("base").join("source"));
+                    let p = PathBuf::from(path);
+                    build.include(p.join("pluginterfaces"));
+                    build.include(p.join("public.sdk").join("source"));
+                    build.include(p.join("base").join("source"));
                     break;
                 }
             }
@@ -93,14 +95,14 @@ fn main() {
     let bundle_name = "Periodic Instruments.vst3";
     let bundle_dir = profile_dir.join(bundle_name);
 
-    create_vst3_bundle(&manifest_dir, &bundle_dir);
+    create_vst3_bundle(&bundle_dir);
 
     // Link the library
     println!("cargo:rustc-link-search=native={}", env::var("OUT_DIR").unwrap());
     println!("cargo:rustc-link-lib=static=periodic_instruments");
 }
 
-fn create_vst3_bundle(manifest_dir: &Path, bundle_dir: &Path) {
+fn create_vst3_bundle(bundle_dir: &Path) {
     use std::fs;
 
     // Platform-specific bundle structure
