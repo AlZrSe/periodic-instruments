@@ -149,7 +149,21 @@ jobs:
       - name: Install VST3 SDK dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y xvfb libxcb-cursor0 libxkbcommon-x11-0 cmake
+          sudo apt-get install -y xvfb libxcb-cursor0 libxkbcommon-x11-0 cmake wget unzip
+
+      - name: Install VST3 SDK
+        run: |
+          VST3_SDK_DIR="/opt/vst3sdk"
+          if [ ! -d "$VST3_SDK_DIR" ]; then
+            echo "Downloading VST3 SDK..."
+            wget -q "https://github.com/steinbergmedia/vst3sdk/releases/download/v3.7.8/vst3sdk-linux.zip" -O /tmp/vst3sdk.zip
+            sudo mkdir -p "$VST3_SDK_DIR"
+            sudo unzip -o /tmp/vst3sdk.zip -d "$VST3_SDK_DIR"
+            echo "VST3 SDK installed to $VST3_SDK_DIR"
+          else
+            echo "VST3 SDK already installed at $VST3_SDK_DIR"
+          fi
+          echo "VST3_SDK=$VST3_SDK_DIR" >> $GITHUB_ENV
 
       - name: Build VST3 plugin (Linux)
         run: |
