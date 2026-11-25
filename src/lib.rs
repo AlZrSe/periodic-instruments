@@ -40,7 +40,6 @@ pub use plugin::parameters::{
     parameter_info,
     create_parameters,
 };
-pub use vst3::parameter::ParameterInfo as Vst3ParameterInfo;
 
 /// Plugin version as semver string
 pub const VERSION: &str = env!("CARGO_PKG_VERSION");

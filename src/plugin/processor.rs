@@ -1,7 +1,6 @@
 //! Audio processor implementation for Periodic Instruments VST3 plugin
 
-use vst3::processor::{Processor, AudioBus, AudioBusType, SpeakerArrangement, ProcessData, ProcessMode, SymbolicSampleSizes};
-use vst3::error::Error;
+use vst3::{Processor, AudioBus, AudioBusType, SpeakerArrangement, ProcessData, ProcessMode, SymbolicSampleSizes, Error};
 use std::sync::Arc;
 use crate::plugin::parameters::ParameterValues;
 
@@ -40,7 +39,7 @@ impl Default for PeriodicInstrumentsProcessor {
 }
 
 impl Processor for PeriodicInstrumentsProcessor {
-    fn initialize(&mut self, _context: vst3::context::InitializeContext) -> Result<(), Error> {
+    fn initialize(&mut self, _context: vst3::InitializeContext) -> Result<(), Error> {
         Ok(())
     }
 
@@ -48,7 +47,7 @@ impl Processor for PeriodicInstrumentsProcessor {
         Ok(())
     }
 
-    fn setup_processing(&mut self, setup: vst3::context::ProcessingSetup) -> Result<(), Error> {
+    fn setup_processing(&mut self, setup: vst3::ProcessingSetup) -> Result<(), Error> {
         if setup.max_samples_per_block > MAX_BLOCK_SIZE as u32 {
             return Err(Error::InvalidArgument);
         }
@@ -122,7 +121,7 @@ impl Processor for PeriodicInstrumentsProcessor {
             Some(AudioBus {
                 name: if is_input { "Audio Input".to_string() } else { "Audio Output".to_string() },
                 bus_type,
-                flags: vst3::processor::BusFlags::DEFAULT_ACTIVE,
+                flags: vst3::BusFlags::DEFAULT_ACTIVE,
                 channel_count: 2, // Stereo
                 arrangement: SpeakerArrangement::Stereo,
             })
