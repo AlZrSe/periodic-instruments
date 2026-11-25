@@ -180,3 +180,5 @@ Created by **AlZrSe**. Inspired by the periodic table and the idea that every el
 ---
 
 *Periodic Instruments — hear the elements.*
+#   T r i g g e r   C I  
+ 
