@@ -4,6 +4,8 @@
 #include "public.sdk/source/vst/vstaudioeffect.h"
 #include "public.sdk/source/vst/vsteditcontroller.h"
 #include "public.sdk/source/main/pluginfactory.h"
+#include "base/ustring.h"
+#include "base/source/fstring.h"
 
 using namespace Steinberg;
 using namespace Steinberg::Vst;
@@ -39,7 +41,7 @@ public:
 	tresult PLUGIN_API process (ProcessData& data) override
 	{
 		// Bypass handling
-		if (data.processMode & ProcessMode::kBypass)
+		if (data.processMode & ProcessModes::kBypass)
 		{
 			if (data.inputs && data.outputs)
 			{
@@ -94,7 +96,7 @@ public:
 		return (symbolicSampleSize == kSample32) ? kResultTrue : kResultFalse;
 	}
 
-	tresult PLUGIN_API getTailSize (int32& tailSize) override
+	tresult PLUGIN_API getTailSize (int32& tailSize)
 	{
 		tailSize = 0;
 		return kResultTrue;
@@ -152,7 +154,6 @@ public:
 		info.defaultNormalizedValue = (paramIndex == 0) ? 0.0 : 0.5;
 		info.unitId = 0;
 		info.flags = flags[paramIndex];
-		info.type = kParameterTypeFloat;
 
 		return kResultTrue;
 	}
@@ -191,15 +192,12 @@ extern "C" {
 //------------------------------------------------------------------------
 // VST3 Factory
 //------------------------------------------------------------------------
-DEF_CLASS_IID (PeriodicInstrumentsProcessor)
-DEF_CLASS_IID (PeriodicInstrumentsController)
-
 SMTG_EXPORT_SYMBOL Steinberg::IPluginFactory* PLUGIN_API GetPluginFactory ()
 {
-	static Steinberg::PFactoryInfo factoryInfo =
-	{
-		"AlZrSe", "https://github.com/AlZrSe/periodic-instruments", ""
-	};
+	static Steinberg::PFactoryInfo factoryInfo ("AlZrSe",
+		"https://github.com/AlZrSe/periodic-instruments",
+		"",
+		Steinberg::Vst::kDefaultFactoryFlags);
 
 	static Steinberg::CPluginFactory factory (factoryInfo);
 
@@ -207,8 +205,17 @@ SMTG_EXPORT_SYMBOL Steinberg::IPluginFactory* PLUGIN_API GetPluginFactory ()
 	if (once)
 	{
 		once = false;
-		factory.registerClass (&kPeriodicInstrumentsProcessorUID, createProcessor, "Periodic Instruments", "Instrument|Synth", "AlZrSe", "0.1.0", "VST 3.7.0", 0);
-		factory.registerClass (&kPeriodicInstrumentsControllerUID, createController, "Periodic Instruments Controller", nullptr, "AlZrSe", "0.1.0", "VST 3.7.0", 0);
+		Steinberg::PClassInfo processorInfo (kPeriodicInstrumentsProcessorUID,
+			Steinberg::PClassInfo::kManyInstances,
+			kVstAudioEffectClass,
+			"Periodic Instruments");
+		factory.registerClass (&processorInfo, createProcessor);
+
+		Steinberg::PClassInfo controllerInfo (kPeriodicInstrumentsControllerUID,
+			Steinberg::PClassInfo::kManyInstances,
+			kVstComponentControllerClass,
+			"Periodic Instruments Controller");
+		factory.registerClass (&controllerInfo, createController);
 	}
 
 	return &factory;
