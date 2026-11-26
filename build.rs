@@ -39,28 +39,32 @@ fn main() {
     build.include(vst3_sdk.join("public.sdk").join("source"));
     build.include(vst3_sdk.join("base"));
 
-    // Also need base source for .cpp files
-    build.file(vst3_sdk.join("base").join("funknown.cpp"));
-    build.file(vst3_sdk.join("base").join("coreiids.cpp"));
-    build.file(vst3_sdk.join("base").join("ustring.cpp"));
-    build.file(vst3_sdk.join("base").join("conststringtable.cpp"));
-    build.file(vst3_sdk.join("base").join("source").join("fobject.cpp"));
-    build.file(vst3_sdk.join("base").join("source").join("fstring.cpp"));
-    build.file(vst3_sdk.join("base").join("source").join("fbuffer.cpp"));
-    build.file(vst3_sdk.join("base").join("source").join("fstreamer.cpp"));
-    build.file(vst3_sdk.join("base").join("thread").join("source").join("flock.cpp"));
-    build.file(vst3_sdk.join("base").join("thread").join("source").join("fcondition.cpp"));
-    build.file(vst3_sdk.join("public.sdk").join("source").join("vst").join("vstcomponent.cpp"));
-    build.file(vst3_sdk.join("public.sdk").join("source").join("vst").join("vstcomponentbase.cpp"));
-    build.file(vst3_sdk.join("public.sdk").join("source").join("vst").join("vsteditcontroller.cpp"));
-    build.file(vst3_sdk.join("public.sdk").join("source").join("common").join("pluginview.cpp"));
-    build.file(vst3_sdk.join("public.sdk").join("source").join("common").join("commoniids.cpp"));
-    build.file(vst3_sdk.join("public.sdk").join("source").join("vst").join("vstaudioeffect.cpp"));
-    build.file(vst3_sdk.join("public.sdk").join("source").join("vst").join("vstbus.cpp"));
-    build.file(vst3_sdk.join("public.sdk").join("source").join("vst").join("vstparameters.cpp"));
-    build.file(vst3_sdk.join("public.sdk").join("source").join("vst").join("vstpresetfile.cpp"));
-    build.file(vst3_sdk.join("public.sdk").join("source").join("vst").join("vstrepresentation.cpp"));
-    build.file(vst3_sdk.join("public.sdk").join("source").join("vst").join("vstinitiids.cpp"));
+    // Collect ALL .cpp files under base/ and public.sdk/source/ (excluding
+    // platform-specific wrappers we don't need) so every IID and helper impl
+    // is compiled in. This avoids undefined-symbol errors at dlopen time.
+    fn collect_cpp(dir: &Path, out: &mut Vec<PathBuf>, exclude: &[&str]) {
+        if let Ok(entries) = std::fs::read_dir(dir) {
+            for entry in entries.flatten() {
+                let path = entry.path();
+                if path.is_dir() {
+                    let name = path.file_name().and_then(|n| n.to_str()).unwrap_or("");
+                    if exclude.contains(&name) { continue; }
+                    collect_cpp(&path, out, exclude);
+                } else if path.extension().map_or(false, |e| e == "cpp") {
+                    out.push(path);
+                }
+            }
+        }
+    }
+    // Exclude the "main" directory from auto-collection; we add the correct
+    // platform entry point manually below.
+    let exclude = ["aaxwrapper", "auwrapper", "auv3wrapper", "interappaudio", "main"];
+    let mut sdk_sources: Vec<PathBuf> = Vec::new();
+    collect_cpp(&vst3_sdk.join("base"), &mut sdk_sources, &exclude);
+    collect_cpp(&vst3_sdk.join("public.sdk").join("source"), &mut sdk_sources, &exclude);
+    for f in &sdk_sources {
+        build.file(f);
+    }
 
     // Compile SDK main files
     if cfg!(target_os = "windows") {
@@ -91,23 +95,19 @@ fn main() {
         // Collect all .o files
         let mut cmd = Command::new("g++");
         cmd.arg("-shared").arg("-fPIC").arg("-Wl,--export-dynamic").arg("-o").arg(&so_path);
-        let mut o_count = 0;
         if let Ok(entries) = std::fs::read_dir(&out_dir) {
             for entry in entries.flatten() {
                 let path = entry.path();
                 if path.extension().map_or(false, |e| e == "o") {
                     cmd.arg(&path);
-                    o_count += 1;
                 }
             }
         }
-        eprintln!("DEBUG: collected {} .o files for linking", o_count);
         cmd.arg("-lstdc++");
         let status = cmd.status().expect("Failed to link .so");
         if !status.success() {
             panic!("Failed to link shared library");
         }
-        let _ = Command::new("nm").arg("-D").arg("--defined-only").arg(&so_path).status();
     }
 
     // Create VST3 bundle
@@ -141,7 +141,6 @@ fn create_vst3_bundle(bundle_dir: &Path, out_dir: &Path) {
     fs::create_dir_all(&platform_dir).expect("Failed to create platform directory");
 
     // Find and copy the compiled library to the bundle
-    // cc crate may produce libperiodic_instruments.so or periodic_instruments.so
     let possible_names = if cfg!(target_os = "windows") {
         vec!["periodic_instruments.dll", "periodic_instruments.lib"]
     } else if cfg!(target_os = "macos") {
