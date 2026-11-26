@@ -105,9 +105,16 @@ public:
 		const char* titles[] = {"Element Selector", "Mass", "Reactivity", "State", "Radiance"};
 		const char* shortTitles[] = {"Element", "Mass", "React", "State", "Rad"};
 
-		UString (info.title, 64).assign (titles[paramIndex], -1);
-		UString (info.shortTitle, 64).assign (shortTitles[paramIndex], -1);
-		UString (info.units, 64).assign ("");
+		// Use fromAscii for char* strings
+		info.title[0] = 0;
+		info.shortTitle[0] = 0;
+		info.units[0] = 0;
+
+		// Simple ASCII copy
+		for (int i = 0; titles[paramIndex][i] && i < 63; i++)
+			info.title[i] = titles[paramIndex][i];
+		for (int i = 0; shortTitles[paramIndex][i] && i < 63; i++)
+			info.shortTitle[i] = shortTitles[paramIndex][i];
 
 		info.id = paramIndex;
 		info.stepCount = (paramIndex == 0) ? 93 : 0;
@@ -131,8 +138,6 @@ public:
 //------------------------------------------------------------------------
 static FUnknown* createProcessor (void*) { return (IAudioProcessor*)new PeriodicInstrumentsProcessor (); }
 static FUnknown* createController (void*) { return (IEditController*)new PeriodicInstrumentsController (); }
-
-// InitModule and DeinitModule are provided by the SDK's moduleinit.cpp
 
 extern "C" {
 
