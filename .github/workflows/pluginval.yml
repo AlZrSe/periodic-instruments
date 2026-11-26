@@ -49,7 +49,7 @@ jobs:
         shell: pwsh
         run: |
           $pluginvalDir = "${{ runner.temp }}/pluginval-windows"
-          $url = "https://github.com/steinbergmedia/vst3sdk/releases/download/${{ env.PLUGINVAL_VERSION }}/pluginval-win.zip"
+          $url = "https://github.com/Tracktion/pluginval/releases/download/${{ env.PLUGINVAL_VERSION }}/pluginval_Windows.zip"
           Write-Host "Downloading pluginval from $url"
           Invoke-WebRequest -Uri $url -OutFile "$pluginvalDir.zip"
           Expand-Archive -Path "$pluginvalDir.zip" -DestinationPath $pluginvalDir -Force
@@ -175,7 +175,7 @@ jobs:
         if: steps.download-pluginval-linux.outputs.cache-hit != 'true'
         run: |
           PLUGINVAL_DIR="${{ runner.temp }}/pluginval-linux"
-          URL="https://github.com/steinbergmedia/vst3sdk/releases/download/${{ env.PLUGINVAL_VERSION }}/pluginval-linux.zip"
+          URL="https://github.com/Tracktion/pluginval/releases/download/${{ env.PLUGINVAL_VERSION }}/pluginval_Linux.zip"
           echo "Downloading pluginval from $URL"
           mkdir -p "$PLUGINVAL_DIR"
           curl -L -o "$PLUGINVAL_DIR.zip" "$URL"
