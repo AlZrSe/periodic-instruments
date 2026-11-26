@@ -56,18 +56,43 @@ fn main() {
     build.include(vst3_sdk.join("public.sdk").join("source"));
     build.include(vst3_sdk.join("base"));
 
-    // Platform entry point - use our minimal custom entry point for Windows
+    // Platform entry point
     if cfg!(target_os = "windows") {
         build.file("src/vst3/entry_windows.cpp");
     } else if cfg!(target_os = "linux") {
         build.file(vst3_sdk.join("public.sdk").join("source").join("main").join("linuxmain.cpp"));
-        // On Linux, we need to compile additional SDK files to provide the VST3 factory
-        // These are safe to compile on Linux as they don't have the redefinition issues
+        // On Linux, compile essential SDK files for VST3 factory
         build.file(vst3_sdk.join("public.sdk").join("source").join("main").join("moduleinit.cpp"));
         build.file(vst3_sdk.join("public.sdk").join("source").join("main").join("pluginfactory.cpp"));
         build.file(vst3_sdk.join("public.sdk").join("source").join("vst").join("hosting").join("processdata.cpp"));
+        // Core VST3 implementation files needed for the plugin to work
+        build.file(vst3_sdk.join("public.sdk").join("source").join("vst").join("vstcomponent.cpp"));
+        build.file(vst3_sdk.join("public.sdk").join("source").join("vst").join("vstcomponentbase.cpp"));
+        build.file(vst3_sdk.join("public.sdk").join("source").join("vst").join("vsteditcontroller.cpp"));
+        build.file(vst3_sdk.join("public.sdk").join("source").join("vst").join("vstaudioeffect.cpp"));
+        build.file(vst3_sdk.join("public.sdk").join("source").join("vst").join("vstbus.cpp"));
+        build.file(vst3_sdk.join("public.sdk").join("source").join("vst").join("vstparameters.cpp"));
+        build.file(vst3_sdk.join("public.sdk").join("source").join("vst").join("vstpresetfile.cpp"));
+        build.file(vst3_sdk.join("public.sdk").join("source").join("vst").join("vstrepresentation.cpp"));
+        build.file(vst3_sdk.join("public.sdk").join("source").join("vst").join("vstinitiids.cpp"));
+        build.file(vst3_sdk.join("public.sdk").join("source").join("common").join("pluginview.cpp"));
+        build.file(vst3_sdk.join("public.sdk").join("source").join("common").join("commoniids.cpp"));
+        // Base SDK files
+        build.file(vst3_sdk.join("base").join("funknown.cpp"));
+        build.file(vst3_sdk.join("base").join("coreiids.cpp"));
+        build.file(vst3_sdk.join("base").join("ustring.cpp"));
+        build.file(vst3_sdk.join("base").join("conststringtable.cpp"));
+        build.file(vst3_sdk.join("base").join("source").join("fobject.cpp"));
+        build.file(vst3_sdk.join("base").join("source").join("fstring.cpp"));
+        build.file(vst3_sdk.join("base").join("source").join("fbuffer.cpp"));
+        build.file(vst3_sdk.join("base").join("source").join("fstreamer.cpp"));
+        build.file(vst3_sdk.join("base").join("thread").join("source").join("flock.cpp"));
+        build.file(vst3_sdk.join("base").join("thread").join("source").join("fcondition.cpp"));
     } else if cfg!(target_os = "macos") {
         build.file(vst3_sdk.join("public.sdk").join("source").join("main").join("macmain.cpp"));
+        // On macOS, compile essential SDK files
+        build.file(vst3_sdk.join("public.sdk").join("source").join("main").join("moduleinit.cpp"));
+        build.file(vst3_sdk.join("public.sdk").join("source").join("main").join("pluginfactory.cpp"));
     }
 
     // Our plugin source
