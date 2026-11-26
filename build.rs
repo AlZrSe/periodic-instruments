@@ -83,8 +83,7 @@ fn main() {
         "public.sdk/source/common/pluginview.cpp",
         "public.sdk/source/common/commoniids.cpp",
         
-        // Module
-        "public.sdk/source/main/dllmain.cpp",
+        // Module (platform-independent)
         "public.sdk/source/main/moduleinit.cpp",
         "public.sdk/source/main/pluginfactory.cpp",
     ];
@@ -101,8 +100,6 @@ fn main() {
     } else if cfg!(target_os = "macos") {
         build.file(vst3_sdk.join("public.sdk").join("source").join("main").join("macmain.cpp"));
     }
-    build.file(vst3_sdk.join("public.sdk").join("source").join("main").join("moduleinit.cpp"));
-    build.file(vst3_sdk.join("public.sdk").join("source").join("main").join("pluginfactory.cpp"));
     // hosting helpers needed by some SDK components
     build.file(vst3_sdk.join("public.sdk").join("source").join("vst").join("hosting").join("processdata.cpp"));
 
