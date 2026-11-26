@@ -131,11 +131,18 @@ fn main() {
         if !status.success() {
             panic!("Failed to link shared library");
         }
-        // Verify symbols are exported
+        // Debug: show exported symbols
+        eprintln!("DEBUG: Exported symbols from .so:");
         let _ = Command::new("nm")
             .arg("-D")
             .arg("--defined-only")
             .arg(&so_path)
+            .status();
+        // Also check for VST3 symbols specifically
+        eprintln!("DEBUG: VST3 symbols:");
+        let _ = Command::new("bash")
+            .arg("-c")
+            .arg(format!("nm -D --defined-only {} | grep -iE 'GetPluginFactory|ModuleEntry|ModuleExit'", so_path.display()))
             .status();
     }
 
