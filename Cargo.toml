@@ -68,3 +68,6 @@ unused_crate_dependencies = "warn"
 unused_imports = "warn"
 unused_variables = "warn"
 dead_code = "warn"
+
+[lints]
+workspace = true
