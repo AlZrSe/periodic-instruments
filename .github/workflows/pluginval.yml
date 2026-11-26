@@ -178,7 +178,8 @@ gf = lib.GetPluginFactory
 gf.restype = ctypes.c_void_p
 factory = gf()
 print("factory ptr:", hex(factory) if factory else None)
-PY      - name: Download pluginval (Linux)
+PY
+      - name: Download pluginval (Linux)
         id: download-pluginval-linux
         uses: actions/cache@v4
         with:
