@@ -4,11 +4,12 @@
 #include "public.sdk/source/vst/vstaudioeffect.h"
 #include "public.sdk/source/vst/vsteditcontroller.h"
 #include "public.sdk/source/main/pluginfactory.h"
-#include "base/ustring.h"
+#include "pluginterfaces/vst/vstspeaker.h"
 
-// Note: fstrdefs.h intentionally omitted - it contains constexpr function definitions
-// that cause redefinition errors on MSVC when included in multiple compilation units.
-// We define our own STR16 macro to avoid including fstrdefs.h.
+// Note: base/ustring.h intentionally omitted - it includes ftypes.h which includes
+// fstrdefs.h, which contains constexpr function definitions that cause redefinition
+// errors on MSVC when included in multiple compilation units.
+// We define our own STR16 macro to avoid including fstrdefs.h via ustring.h.
 
 #ifndef STR16
 #define STR16(x) L##x
