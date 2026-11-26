@@ -30,7 +30,8 @@ fn main() {
          .define("VST_VERSION_STR", Some("\"0.1.0\""))
          .define("NDEBUG", Some("1"))
          .opt_level(3)
-         .pic(true);
+         .pic(true)
+         .shared_flag(true);
 
     // Add VST3 SDK include paths
     build.include(&vst3_sdk);  // For "pluginterfaces/base/fplatform.h" style includes
@@ -87,18 +88,68 @@ fn main() {
     let bundle_name = "Periodic Instruments.vst3";
     let bundle_dir = profile_dir.join(bundle_name);
 
-    create_vst3_bundle(&bundle_dir);
+    create_vst3_bundle(&bundle_dir, &out_dir);
 
-    // Link the library
-    println!("cargo:rustc-link-search=native={}", env::var("OUT_DIR").unwrap());
-    println!("cargo:rustc-link-lib=static=periodic_instruments");
+    // The C++ VST3 plugin is built as a shared library in the bundle
+    // No need to link into the Rust library
 }
 
-fn create_vst3_bundle(bundle_dir: &Path) {
+fn create_vst3_bundle(bundle_dir: &Path, out_dir: &Path) {
     use std::fs;
 
     let contents_dir = bundle_dir.join("Contents");
     fs::create_dir_all(&contents_dir).expect("Failed to create bundle directory");
+
+    // Platform-specific binary directory
+    #[cfg(target_os = "linux")]
+    let platform_dir = contents_dir.join("x86_64-linux");
+    #[cfg(target_os = "windows")]
+    let platform_dir = contents_dir.join("x86_64-win");
+    #[cfg(target_os = "macos")]
+    let platform_dir = contents_dir.join("MacOS");
+
+    fs::create_dir_all(&platform_dir).expect("Failed to create platform directory");
+
+    // Find and copy the compiled library to the bundle
+    // cc crate may produce libperiodic_instruments.so or periodic_instruments.so
+    let possible_names = if cfg!(target_os = "windows") {
+        vec!["periodic_instruments.dll", "periodic_instruments.lib"]
+    } else if cfg!(target_os = "macos") {
+        vec!["libperiodic_instruments.dylib", "periodic_instruments.dylib"]
+    } else {
+        vec!["libperiodic_instruments.so", "periodic_instruments.so"]
+    };
+
+    let mut found = false;
+    for name in &possible_names {
+        let src_lib = out_dir.join(name);
+        if src_lib.exists() {
+            let dst_name = if cfg!(target_os = "windows") {
+                "Periodic Instruments.dll"
+            } else if cfg!(target_os = "macos") {
+                "Periodic Instruments.dylib"
+            } else {
+                "Periodic Instruments.so"
+            };
+            fs::copy(&src_lib, platform_dir.join(dst_name))
+                .expect("Failed to copy library to bundle");
+            found = true;
+            break;
+        }
+    }
+
+    if !found {
+        // List OUT_DIR contents for debugging
+        eprintln!("OUT_DIR contents:");
+        if let Ok(entries) = fs::read_dir(out_dir) {
+            for entry in entries {
+                if let Ok(entry) = entry {
+                    eprintln!("  {}", entry.path().display());
+                }
+            }
+        }
+        panic!("Compiled library not found in OUT_DIR");
+    }
 
     // Copy moduleinfo.json
     let module_info_src = Path::new("src/vst3/moduleinfo.json");
