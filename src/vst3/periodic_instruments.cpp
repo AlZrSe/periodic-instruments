@@ -3,9 +3,7 @@
 
 #include "public.sdk/source/vst/vstaudioeffect.h"
 #include "public.sdk/source/vst/vsteditcontroller.h"
-#include "public.sdk/source/main/pluginfactory.h"
-#include "base/ustring.h"
-#include "base/source/fstring.h"
+#include "public.sdk/source/main/pluginfactory_constexpr.h"
 
 using namespace Steinberg;
 using namespace Steinberg::Vst;
@@ -72,12 +70,6 @@ public:
 		return (symbolicSampleSize == kSample32) ? kResultTrue : kResultFalse;
 	}
 
-	tresult PLUGIN_API getTailSize (int32& tailSize)
-	{
-		tailSize = 0;
-		return kResultTrue;
-	}
-
 	tresult PLUGIN_API setState (IBStream* state) override { return kResultTrue; }
 	tresult PLUGIN_API getState (IBStream* state) override { return kResultTrue; }
 };
@@ -110,26 +102,18 @@ public:
 
 		const char* titles[] = {"Element Selector", "Mass", "Reactivity", "State", "Radiance"};
 		const char* shortTitles[] = {"Element", "Mass", "React", "State", "Rad"};
-		int32 stepCounts[] = {93, 0, 0, 0, 0};
-		int32 flags[] = {
-			ParameterInfo::kCanAutomate | ParameterInfo::kIsList,
-			ParameterInfo::kCanAutomate,
-			ParameterInfo::kCanAutomate,
-			ParameterInfo::kCanAutomate,
-			ParameterInfo::kCanAutomate
-		};
 
-		String str (titles[paramIndex]);
-		UString (info.title, 64).assign (str.text16());
-		String shortStr (shortTitles[paramIndex]);
-		UString (info.shortTitle, 64).assign (shortStr.text16());
-		UString (info.units, 64).assign (USTRING (""));
+		UString (info.title, 64).assign (titles[paramIndex]);
+		UString (info.shortTitle, 64).assign (shortTitles[paramIndex]);
+		UString (info.units, 64).assign ("");
 
 		info.id = paramIndex;
-		info.stepCount = stepCounts[paramIndex];
+		info.stepCount = (paramIndex == 0) ? 93 : 0;
 		info.defaultNormalizedValue = (paramIndex == 0) ? 0.0 : 0.5;
 		info.unitId = 0;
-		info.flags = flags[paramIndex];
+		info.flags = ParameterInfo::kCanAutomate;
+		if (paramIndex == 0)
+			info.flags |= ParameterInfo::kIsList;
 
 		return kResultTrue;
 	}
@@ -143,50 +127,34 @@ public:
 //------------------------------------------------------------------------
 // Factory
 //------------------------------------------------------------------------
-static Steinberg::FUnknown* createProcessor (void*)
-{
-	return (Steinberg::Vst::IAudioProcessor*)new PeriodicInstrumentsProcessor ();
-}
+static FUnknown* createProcessor (void*) { return (IAudioProcessor*)new PeriodicInstrumentsProcessor (); }
+static FUnknown* createController (void*) { return (IEditController*)new PeriodicInstrumentsController (); }
 
-static Steinberg::FUnknown* createController (void*)
-{
-	return (Steinberg::Vst::IEditController*)new PeriodicInstrumentsController ();
-}
+#define stringPluginName "Periodic Instruments"
+#define stringPluginVendor "AlZrSe"
 
-// InitModule and DeinitModule are provided by the SDK's moduleinit.cpp
+BEGIN_FACTORY_DEF (stringPluginVendor, "https://github.com/AlZrSe/periodic-instruments", "info@alzrse.com", 2)
 
-extern "C" {
+	DEF_CLASS (kPeriodicInstrumentsProcessorUID,
+	           PClassInfo::kManyInstances,
+	           kVstAudioEffectClass,
+	           stringPluginName,
+	           0,
+	           "Instrument|Synth",
+	           "0.1.0",
+	           kVstVersionString,
+	           createProcessor,
+	           nullptr)
 
-//------------------------------------------------------------------------
-// VST3 Factory
-//------------------------------------------------------------------------
-SMTG_EXPORT_SYMBOL Steinberg::IPluginFactory* PLUGIN_API GetPluginFactory ()
-{
-	static Steinberg::PFactoryInfo factoryInfo ("AlZrSe",
-		"https://github.com/AlZrSe/periodic-instruments",
-		"",
-		Steinberg::Vst::kDefaultFactoryFlags);
+	DEF_CLASS (kPeriodicInstrumentsControllerUID,
+	           PClassInfo::kManyInstances,
+	           kVstComponentControllerClass,
+	           stringPluginName "Controller",
+	           0,
+	           nullptr,
+	           "0.1.0",
+	           kVstVersionString,
+	           createController,
+	           nullptr)
 
-	static Steinberg::CPluginFactory factory (factoryInfo);
-
-	static bool once = true;
-	if (once)
-	{
-		once = false;
-		Steinberg::PClassInfo processorInfo (kPeriodicInstrumentsProcessorUID,
-			Steinberg::PClassInfo::kManyInstances,
-			kVstAudioEffectClass,
-			"Periodic Instruments");
-		factory.registerClass (&processorInfo, createProcessor);
-
-		Steinberg::PClassInfo controllerInfo (kPeriodicInstrumentsControllerUID,
-			Steinberg::PClassInfo::kManyInstances,
-			kVstComponentControllerClass,
-			"Periodic Instruments Controller");
-		factory.registerClass (&controllerInfo, createController);
-	}
-
-	return &factory;
-}
-
-} // extern "C"
+END_FACTORY
