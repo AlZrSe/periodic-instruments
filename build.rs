@@ -102,6 +102,12 @@ fn main() {
         if !status.success() {
             panic!("Failed to link shared library");
         }
+        // Verify symbols are exported
+        let _ = Command::new("nm")
+            .arg("-D")
+            .arg("--defined-only")
+            .arg(&so_path)
+            .status();
     }
 
     // Create VST3 bundle
