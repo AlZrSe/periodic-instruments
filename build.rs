@@ -35,7 +35,9 @@ fn main() {
         // On Windows with MSVC
         build.flag("/std:c++17")
              .flag("/EHsc")  // Enable C++ exceptions
-             .flag("/W3");   // Warning level 3
+             .flag("/W3")    // Warning level 3
+             .flag("/Zc:inline") // C++17 inline variables support
+             .define("_CRT_SECURE_NO_WARNINGS", None); // Suppress CRT warnings
     }
     #[cfg(not(target_os = "windows"))]
     {
@@ -50,40 +52,45 @@ fn main() {
     build.include(vst3_sdk.join("public.sdk").join("source"));
     build.include(vst3_sdk.join("base"));
 
-    // Collect ALL .cpp files under base/ and public.sdk/source/, excluding
-    // directories/files that are platform wrappers, aggregators, tests, or
-    // need optional dependencies (vstgui). This ensures every IID and helper
-    // implementation is compiled in.
-    fn collect_cpp(dir: &Path, out: &mut Vec<PathBuf>, exclude: &[&str]) {
-        if let Ok(entries) = std::fs::read_dir(dir) {
-            for entry in entries.flatten() {
-                let path = entry.path();
-                if path.is_dir() {
-                    let name = path.file_name().and_then(|n| n.to_str()).unwrap_or("");
-                    if exclude.contains(&name) { continue; }
-                    collect_cpp(&path, out, exclude);
-                } else if path.extension().map_or(false, |e| e == "cpp") {
-                    let fname = path.file_name().and_then(|n| n.to_str()).unwrap_or("");
-                    if fname.contains("vstgui") { continue; }
-                    if fname.contains("sdk.cpp") { continue; }
-                    if fname.contains("stdsdk") { continue; }
-                    if fname.contains("singlecomponent") { continue; }
-                    if fname.contains("win32") { continue; }
-                    if fname.contains("_mac") { continue; }
-                    if fname.contains("macos") { continue; }
-                    out.push(path);
-                }
-            }
-        }
-    }
-    let exclude = ["aaxwrapper", "auwrapper", "auv3wrapper", "interappaudio",
-                   "main", "vstgui", "basewrapper", "test", "tests",
-                   "samples"];
-    let mut sdk_sources: Vec<PathBuf> = Vec::new();
-    collect_cpp(&vst3_sdk.join("base"), &mut sdk_sources, &exclude);
-    collect_cpp(&vst3_sdk.join("public.sdk").join("source"), &mut sdk_sources, &exclude);
-    for f in &sdk_sources {
-        build.file(f);
+    // Explicitly list only the SDK files we actually need for a minimal VST3 plugin.
+    // This avoids redefinition errors from headers with const/inline definitions
+    // included in multiple compilation units (problematic on MSVC).
+    let sdk_files = [
+        // Base core
+        "base/funknown.cpp",
+        "base/ustring.cpp",
+        "base/conststringtable.cpp",
+        "base/source/fobject.cpp",
+        "base/source/fstring.cpp",
+        "base/source/fbuffer.cpp",
+        "base/source/fstreamer.cpp",
+        "base/thread/source/flock.cpp",
+        "base/thread/source/fcondition.cpp",
+        "base/coreiids.cpp",
+        
+        // VST3 core
+        "public.sdk/source/vst/vstcomponent.cpp",
+        "public.sdk/source/vst/vstcomponentbase.cpp",
+        "public.sdk/source/vst/vsteditcontroller.cpp",
+        "public.sdk/source/vst/vstaudioeffect.cpp",
+        "public.sdk/source/vst/vstbus.cpp",
+        "public.sdk/source/vst/vstparameters.cpp",
+        "public.sdk/source/vst/vstpresetfile.cpp",
+        "public.sdk/source/vst/vstrepresentation.cpp",
+        "public.sdk/source/vst/vstinitiids.cpp",
+        
+        // Common
+        "public.sdk/source/common/pluginview.cpp",
+        "public.sdk/source/common/commoniids.cpp",
+        
+        // Module
+        "public.sdk/source/main/dllmain.cpp",
+        "public.sdk/source/main/moduleinit.cpp",
+        "public.sdk/source/main/pluginfactory.cpp",
+    ];
+    
+    for f in &sdk_files {
+        build.file(vst3_sdk.join(f));
     }
 
     // Compile SDK main files (platform entry point)
