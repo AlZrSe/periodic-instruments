@@ -5,8 +5,14 @@
 #include "public.sdk/source/vst/vsteditcontroller.h"
 #include "public.sdk/source/main/pluginfactory.h"
 #include "base/ustring.h"
+
 // Note: fstrdefs.h intentionally omitted - it contains constexpr function definitions
 // that cause redefinition errors on MSVC when included in multiple compilation units.
+// We define our own STR16 macro to avoid including fstrdefs.h.
+
+#ifndef STR16
+#define STR16(x) L##x
+#endif
 
 using namespace Steinberg;
 using namespace Steinberg::Vst;
