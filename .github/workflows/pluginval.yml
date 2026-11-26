@@ -28,17 +28,14 @@ jobs:
         with:
           arch: amd64
 
-      - name: Install Rust toolchain (Windows)
-        uses: dtolnay/rust-toolchain@stable
+      - name: Setup Rust with MSVC target (Windows)
+        uses: actions/setup-rust@v1
+        with:
+          toolchain: stable
+          target: x86_64-pc-windows-msvc
+          override: true
 
-      - name: Install MSVC target (Windows)
-        shell: pwsh
-        run: |
-          Write-Host "Installing MSVC target..."
-          rustup target add x86_64-pc-windows-msvc
-          rustup default stable-x86_64-pc-windows-msvc
-
-- name: Build VST3 plugin (Windows)
+      - name: Build VST3 plugin (Windows)
         shell: pwsh
         run: |
           Write-Host "Building VST3 plugin..."
