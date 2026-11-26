@@ -57,6 +57,9 @@ fn main() {
                     if fname.contains("sdk.cpp") { continue; }
                     if fname.contains("stdsdk") { continue; }
                     if fname.contains("singlecomponent") { continue; }
+                    if fname.contains("win32") { continue; }
+                    if fname.contains("_mac") { continue; }
+                    if fname.contains("macos") { continue; }
                     out.push(path);
                 }
             }
