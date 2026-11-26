@@ -5,6 +5,7 @@
 #include "public.sdk/source/vst/vsteditcontroller.h"
 #include "public.sdk/source/main/pluginfactory.h"
 #include "base/ustring.h"
+#include "base/fstrdefs.h"
 
 using namespace Steinberg;
 using namespace Steinberg::Vst;
