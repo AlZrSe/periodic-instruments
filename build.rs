@@ -53,6 +53,7 @@ fn main() {
                 } else if path.extension().map_or(false, |e| e == "cpp") {
                     let fname = path.file_name().and_then(|n| n.to_str()).unwrap_or("");
                     if fname.contains("vstgui") { continue; }
+                    if fname.contains("sdk.cpp") || fname.contains("stdsdk") { continue; }
                     out.push(path);
                 }
             }
