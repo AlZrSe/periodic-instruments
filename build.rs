@@ -87,7 +87,7 @@ fn main() {
         let so_path = out_dir.join("libperiodic_instruments.so");
         // Collect all .o files
         let mut cmd = Command::new("g++");
-        cmd.arg("-shared").arg("-fPIC").arg("-Wl,--export-dynamic,--whole-archive").arg("-o").arg(&so_path);
+        cmd.arg("-shared").arg("-fPIC").arg("-Wl,--export-dynamic").arg("-o").arg(&so_path);
         if let Ok(entries) = std::fs::read_dir(&out_dir) {
             for entry in entries.flatten() {
                 let path = entry.path();
