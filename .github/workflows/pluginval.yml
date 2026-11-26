@@ -10,7 +10,7 @@ permissions:
   contents: read
 
 env:
-  PLUGINVAL_VERSION: "v0.3.8"
+  PLUGINVAL_VERSION: "v1.0.4"
   VST3_BUNDLE_NAME: "Periodic Instruments.vst3"
   VST3_BUNDLE_PATH: "target/release/Periodic Instruments.vst3"
 
