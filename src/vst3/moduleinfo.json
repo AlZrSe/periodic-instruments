@@ -6,8 +6,8 @@
     {
       "cid": "706572696f646963496e737472756d00",
       "name": "Periodic Instruments",
-      "category": "audio",
-      "subcategories": ["Instrument|Synth"],
+      "category": "Audio Module Class",
+      "subcategories": ["Instrument", "Synth"],
       "vendor": "AlZrSe",
       "version": "0.1.0",
       "sdkVersion": "VST 3.7.0",
@@ -17,7 +17,8 @@
     {
       "cid": "706572696f646963496e737472430000",
       "name": "Periodic Instruments Controller",
-      "category": "controller",
+      "category": "Component Controller Class",
+      "subcategories": [],
       "vendor": "AlZrSe",
       "version": "0.1.0",
       "sdkVersion": "VST 3.7.0",
