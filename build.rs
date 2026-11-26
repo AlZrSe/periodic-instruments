@@ -111,9 +111,14 @@ fn main() {
     {
         use std::process::Command;
         let so_path = out_dir.join("libperiodic_instruments.so");
-        // Collect all .o files
+        // Use --whole-archive to force all symbols from static lib into shared lib
         let mut cmd = Command::new("g++");
-        cmd.arg("-shared").arg("-fPIC").arg("-Wl,--export-dynamic").arg("-o").arg(&so_path);
+        cmd.arg("-shared")
+           .arg("-fPIC")
+           .arg("-Wl,--export-dynamic")
+           .arg("-Wl,--whole-archive")
+           .arg("-o")
+           .arg(&so_path);
         if let Ok(entries) = std::fs::read_dir(&out_dir) {
             for entry in entries.flatten() {
                 let path = entry.path();
@@ -122,6 +127,7 @@ fn main() {
                 }
             }
         }
+        cmd.arg("-Wl,--no-whole-archive");
         cmd.arg("-lstdc++");
         let status = cmd.status().expect("Failed to link .so");
         if !status.success() {
