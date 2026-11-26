@@ -25,26 +25,26 @@ extern "C" {
 
 __attribute__((visibility("default"))) __attribute__((used)) IPluginFactory* GetPluginFactory ()
 {
-    static PFactoryInfo factoryInfo ("AlZrSe",
-        "https://github.com/AlZrSe/periodic-instruments",
-        "",
-        Vst::kDefaultFactoryFlags);
-
-    static CPluginFactory factory (factoryInfo);
-
-    static bool once = true;
-    if (once)
+    if (!gPluginFactory)
     {
-        once = false;
+        static PFactoryInfo factoryInfo ("AlZrSe",
+            "https://github.com/AlZrSe/periodic-instruments",
+            "",
+            Vst::kDefaultFactoryFlags);
+        gPluginFactory = new CPluginFactory (factoryInfo);
 
         static PClassInfo processorInfo (kProcessorUID,
             PClassInfo::kManyInstances,
             kVstAudioEffectClass,
             "Periodic Instruments");
-        factory.registerClass (&processorInfo, createProcessor);
+        gPluginFactory->registerClass (&processorInfo, createProcessor);
+    }
+    else
+    {
+        gPluginFactory->addRef ();
     }
 
-    return &factory;
+    return gPluginFactory;
 }
 
 } // extern "C"
