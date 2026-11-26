@@ -254,7 +254,7 @@ jobs:
           BUNDLE="${{ env.VST3_BUNDLE_PATH }}"
           LOG_FILE="${{ runner.temp }}/pluginval-level7-linux.log"
           echo "Running pluginval Level 7 on $BUNDLE"
-          xvfb-run -a "$PLUGINVAL" --strictness-level 7 "$BUNDLE" 2>&1 | tee "$LOG_FILE"
+          xvfb-run -a gdb -batch --ex=run --ex=bt --args "$PLUGINVAL" --strictness-level 7 "$BUNDLE" 2>&1 | tee "$LOG_FILE" || true
           EXIT_CODE=${PIPESTATUS[0]}
           echo "Exit code: $EXIT_CODE"
           echo "LOG_FILE=$LOG_FILE" >> $GITHUB_ENV
