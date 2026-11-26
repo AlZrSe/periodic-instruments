@@ -25,13 +25,24 @@ fn main() {
     // Build the C++ VST3 plugin using the `cc` crate
     let mut build = cc::Build::new();
     build.cpp(true)
-         .flag_if_supported("-std=c++17")
-         .flag_if_supported("/std:c++17")
          .define("VST_VERSION_STR", Some("\"0.1.0\""))
          .define("NDEBUG", Some("1"))
-         .opt_level(3)
-         .pic(true)
-         .flag("-fvisibility=default");
+         .opt_level(3);
+    
+    // Platform-specific settings
+    #[cfg(target_os = "windows")]
+    {
+        // On Windows with MSVC
+        build.flag("/std:c++17")
+             .flag("/EHsc")  // Enable C++ exceptions
+             .flag("/W3");   // Warning level 3
+    }
+    #[cfg(not(target_os = "windows"))]
+    {
+        build.flag("-std=c++17")
+             .pic(true)
+             .flag("-fvisibility=default");
+    }
 
     // Add VST3 SDK include paths
     build.include(&vst3_sdk);  // For "pluginterfaces/base/fplatform.h" style includes
