@@ -35,7 +35,7 @@ jobs:
         shell: powershell
         run: |
           Write-Host "Building VST3 plugin..."
-          cargo build --release 2>&1 | Tee-Object -Variable buildOutput
+          & cargo build --release 2>&1 | Tee-Object -Variable buildOutput
           Write-Host "Build output:" 
           $buildOutput
           $bundlePath = "${{ env.VST3_BUNDLE_PATH }}"
