@@ -52,6 +52,7 @@ fn main() {
     build.file(vst3_sdk.join("public.sdk").join("source").join("vst").join("vstcomponent.cpp"));
     build.file(vst3_sdk.join("public.sdk").join("source").join("vst").join("vstcomponentbase.cpp"));
     build.file(vst3_sdk.join("public.sdk").join("source").join("vst").join("vsteditcontroller.cpp"));
+    build.file(vst3_sdk.join("public.sdk").join("source").join("common").join("pluginview.cpp"));
     build.file(vst3_sdk.join("public.sdk").join("source").join("vst").join("vstaudioeffect.cpp"));
     build.file(vst3_sdk.join("public.sdk").join("source").join("vst").join("vstbus.cpp"));
     build.file(vst3_sdk.join("public.sdk").join("source").join("vst").join("vstparameters.cpp"));
