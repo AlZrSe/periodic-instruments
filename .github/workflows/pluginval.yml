@@ -32,10 +32,13 @@ jobs:
         uses: dtolnay/rust-toolchain@stable
 
       - name: Build VST3 plugin (Windows)
-        shell: powershell
+        shell: pwsh
         run: |
           Write-Host "Building VST3 plugin..."
-          & cargo build --release 2>&1 | Tee-Object -Variable buildOutput
+          # Set up CC environment variables for cc crate
+          $env:CC = "cl.exe"
+          $env:CXX = "cl.exe"
+          cargo build --release 2>&1 | Tee-Object -Variable buildOutput
           Write-Host "Build output:" 
           $buildOutput
           $bundlePath = "${{ env.VST3_BUNDLE_PATH }}"
