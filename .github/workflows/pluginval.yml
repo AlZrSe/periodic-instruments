@@ -231,7 +231,6 @@ jobs:
           PLUGINVAL="$PLUGINVAL_PATH"
           BUNDLE="${{ env.VST3_BUNDLE_PATH }}"
           LOG_FILE="${{ runner.temp }}/pluginval-level5-linux.log"
-          rm -f "$BUNDLE/Contents/moduleinfo.json"
           echo "Running pluginval Level 5 on $BUNDLE"
           xvfb-run -a "$PLUGINVAL" --strictness-level 5 "$BUNDLE" 2>&1 | tee "$LOG_FILE"
           EXIT_CODE=${PIPESTATUS[0]}
