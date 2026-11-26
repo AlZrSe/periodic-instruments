@@ -23,16 +23,10 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Install Visual C++ Build Tools (Windows)
-        shell: powershell
-        run: |
-          Write-Host "Installing Visual C++ Build Tools..."
-          # Install VS Build Tools with C++ workload
-          $vsUrl = "https://aka.ms/vs/17/release/vs_buildtools.exe"
-          $installer = "$env:TEMP\vs_buildtools.exe"
-          Invoke-WebRequest -Uri $vsUrl -OutFile $installer
-          & $installer --quiet --wait --norestart --nocache --add Microsoft.VisualStudio.Workload.VCTools --includeRecommended
-          Write-Host "Visual C++ Build Tools installed."
+      - name: Set up MSVC environment (Windows)
+        uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: amd64
 
       - name: Install Rust toolchain (Windows)
         uses: dtolnay/rust-toolchain@stable
