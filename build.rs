@@ -66,6 +66,9 @@ fn main() {
     build.file(vst3_sdk.join("public.sdk").join("source").join("common").join("pluginview.cpp"));
     build.file(vst3_sdk.join("public.sdk").join("source").join("common").join("commoniids.cpp"));
 
+    // main (plugin factory implementation)
+    build.file(vst3_sdk.join("public.sdk").join("source").join("main").join("pluginfactory.cpp"));
+
     // Compile SDK main files
     if cfg!(target_os = "windows") {
         build.file(vst3_sdk.join("public.sdk").join("source").join("main").join("dllmain.cpp"));
