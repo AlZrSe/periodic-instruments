@@ -149,7 +149,7 @@ jobs:
       - name: Install VST3 SDK dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y xvfb libxcb-cursor0 libxkbcommon-x11-0 gdb
+          sudo apt-get install -y xvfb libxcb-cursor0 libxkbcommon-x11-0
 
       - name: Build VST3 plugin (Linux)
         run: |
@@ -162,17 +162,7 @@ jobs:
             exit 1
           fi
           echo "Built VST3 bundle at $BUNDLE_PATH"
-          echo "=== Exported symbols (nm -D) ==="
-          nm -D --defined-only "$BUNDLE_PATH/Contents/x86_64-linux/Periodic Instruments.so" | grep -iE "GetPluginFactory|ModuleEntry|ModuleExit" || echo "NONE FOUND"
-          echo "=== readelf dynsym ==="
-          readelf --dyn-syms "$BUNDLE_PATH/Contents/x86_64-linux/Periodic Instruments.so" | grep -iE "GetPluginFactory|ModuleEntry|ModuleExit" || echo "NONE FOUND"
-          echo "=== ldd ==="
-          ldd "$BUNDLE_PATH/Contents/x86_64-linux/Periodic Instruments.so"
-          echo "=== done diagnostics ==="
-      - name: Probe VST3 module (Linux)
-        run: |
-          g++ -std=c++17 -I vst3sdk -I vst3sdk/pluginterfaces -I vst3sdk/public.sdk/source -I vst3sdk/base tests/vst3_probe.cpp -o /tmp/vst3_probe -ldl
-          /tmp/vst3_probe
+          echo "Built VST3 bundle at $BUNDLE_PATH"
       - name: Download pluginval (Linux)
         id: download-pluginval-linux
         uses: actions/cache@v4
@@ -232,7 +222,7 @@ jobs:
           BUNDLE="${{ env.VST3_BUNDLE_PATH }}"
           LOG_FILE="${{ runner.temp }}/pluginval-level5-linux.log"
           echo "Running pluginval Level 5 on $BUNDLE"
-          xvfb-run -a gdb -batch --ex=run --ex=bt --args "$PLUGINVAL" --strictness-level 5 "$BUNDLE" 2>&1 | tee "$LOG_FILE" || true
+          xvfb-run -a "$PLUGINVAL" --strictness-level 5 "$BUNDLE" 2>&1 | tee "$LOG_FILE"
           EXIT_CODE=${PIPESTATUS[0]}
           echo "Exit code: $EXIT_CODE"
           echo "LOG_FILE=$LOG_FILE" >> $GITHUB_ENV
@@ -254,7 +244,7 @@ jobs:
           BUNDLE="${{ env.VST3_BUNDLE_PATH }}"
           LOG_FILE="${{ runner.temp }}/pluginval-level7-linux.log"
           echo "Running pluginval Level 7 on $BUNDLE"
-          xvfb-run -a gdb -batch --ex=run --ex=bt --args "$PLUGINVAL" --strictness-level 7 "$BUNDLE" 2>&1 | tee "$LOG_FILE" || true
+          xvfb-run -a "$PLUGINVAL" --strictness-level 7 "$BUNDLE" 2>&1 | tee "$LOG_FILE"
           EXIT_CODE=${PIPESTATUS[0]}
           echo "Exit code: $EXIT_CODE"
           echo "LOG_FILE=$LOG_FILE" >> $GITHUB_ENV

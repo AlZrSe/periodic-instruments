@@ -13,6 +13,17 @@
       "sdkVersion": "VST 3.8.1",
       "flags": 0,
       "classType": "audio"
+    },
+    {
+      "cid": "706572696f646963496e737472430000",
+      "name": "Periodic Instruments Controller",
+      "category": "Component Controller Class",
+      "subcategories": [],
+      "vendor": "AlZrSe",
+      "version": "0.1.0",
+      "sdkVersion": "VST 3.8.1",
+      "flags": 0,
+      "classType": "controller"
     }
   ]
 }
