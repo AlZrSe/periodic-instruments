@@ -39,35 +39,32 @@ fn main() {
     build.include(vst3_sdk.join("public.sdk").join("source"));
     build.include(vst3_sdk.join("base"));
 
-    // Collect ALL .cpp files under base/ and public.sdk/source/ (excluding
-    // platform-specific wrappers we don't need) so every IID and helper impl
-    // is compiled in. This avoids undefined-symbol errors at dlopen time.
-    fn collect_cpp(dir: &Path, out: &mut Vec<PathBuf>, exclude: &[&str]) {
-        if let Ok(entries) = std::fs::read_dir(dir) {
-            for entry in entries.flatten() {
-                let path = entry.path();
-                if path.is_dir() {
-                    let name = path.file_name().and_then(|n| n.to_str()).unwrap_or("");
-                    if exclude.contains(&name) { continue; }
-                    collect_cpp(&path, out, exclude);
-                } else if path.extension().map_or(false, |e| e == "cpp") {
-                    let fname = path.file_name().and_then(|n| n.to_str()).unwrap_or("");
-                    if fname.contains("vstgui") { continue; }
-                    if fname.contains("sdk.cpp") || fname.contains("stdsdk") { continue; }
-                    out.push(path);
-                }
-            }
-        }
-    }
-    // Exclude the "main" directory from auto-collection; we add the correct
-    // platform entry point manually below.
-    let exclude = ["aaxwrapper", "auwrapper", "auv3wrapper", "interappaudio", "main", "vstgui", "basewrapper", "hosting", "test", "tests", "samples"];
-    let mut sdk_sources: Vec<PathBuf> = Vec::new();
-    collect_cpp(&vst3_sdk.join("base"), &mut sdk_sources, &exclude);
-    collect_cpp(&vst3_sdk.join("public.sdk").join("source"), &mut sdk_sources, &exclude);
-    for f in &sdk_sources {
-        build.file(f);
-    }
+    // Base / core
+    build.file(vst3_sdk.join("base").join("funknown.cpp"));
+    build.file(vst3_sdk.join("base").join("coreiids.cpp"));
+    build.file(vst3_sdk.join("base").join("ustring.cpp"));
+    build.file(vst3_sdk.join("base").join("conststringtable.cpp"));
+    build.file(vst3_sdk.join("base").join("source").join("fobject.cpp"));
+    build.file(vst3_sdk.join("base").join("source").join("fstring.cpp"));
+    build.file(vst3_sdk.join("base").join("source").join("fbuffer.cpp"));
+    build.file(vst3_sdk.join("base").join("source").join("fstreamer.cpp"));
+    build.file(vst3_sdk.join("base").join("thread").join("source").join("flock.cpp"));
+    build.file(vst3_sdk.join("base").join("thread").join("source").join("fcondition.cpp"));
+
+    // public.sdk VST
+    build.file(vst3_sdk.join("public.sdk").join("source").join("vst").join("vstcomponent.cpp"));
+    build.file(vst3_sdk.join("public.sdk").join("source").join("vst").join("vstcomponentbase.cpp"));
+    build.file(vst3_sdk.join("public.sdk").join("source").join("vst").join("vsteditcontroller.cpp"));
+    build.file(vst3_sdk.join("public.sdk").join("source").join("vst").join("vstaudioeffect.cpp"));
+    build.file(vst3_sdk.join("public.sdk").join("source").join("vst").join("vstbus.cpp"));
+    build.file(vst3_sdk.join("public.sdk").join("source").join("vst").join("vstparameters.cpp"));
+    build.file(vst3_sdk.join("public.sdk").join("source").join("vst").join("vstpresetfile.cpp"));
+    build.file(vst3_sdk.join("public.sdk").join("source").join("vst").join("vstrepresentation.cpp"));
+    build.file(vst3_sdk.join("public.sdk").join("source").join("vst").join("vstinitiids.cpp"));
+
+    // common
+    build.file(vst3_sdk.join("public.sdk").join("source").join("common").join("pluginview.cpp"));
+    build.file(vst3_sdk.join("public.sdk").join("source").join("common").join("commoniids.cpp"));
 
     // Compile SDK main files
     if cfg!(target_os = "windows") {
