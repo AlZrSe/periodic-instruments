@@ -13,7 +13,7 @@ fn main() {
 
     let _target = env::var("TARGET").unwrap();
     let _profile = env::var("PROFILE").unwrap();
-    let _out_dir = PathBuf::from(env::var("OUT_DIR").unwrap());
+    let out_dir = PathBuf::from(env::var("OUT_DIR").unwrap());
     let manifest_dir = PathBuf::from(env::var("CARGO_MANIFEST_DIR").unwrap());
 
     // VST3 SDK is in the repository
@@ -30,8 +30,7 @@ fn main() {
          .define("VST_VERSION_STR", Some("\"0.1.0\""))
          .define("NDEBUG", Some("1"))
          .opt_level(3)
-         .pic(true)
-         .shared_flag(true);
+         .pic(true);
 
     // Add VST3 SDK include paths
     build.include(&vst3_sdk);  // For "pluginterfaces/base/fplatform.h" style includes
@@ -78,6 +77,28 @@ fn main() {
         build.compile("periodic_instruments");
     } else if cfg!(target_os = "macos") {
         build.compile("periodic_instruments");
+    }
+
+    // Link the static library into a shared library (.so)
+    #[cfg(target_os = "linux")]
+    {
+        use std::process::Command;
+        let so_path = out_dir.join("libperiodic_instruments.so");
+        // Collect all .o files
+        let mut cmd = Command::new("g++");
+        cmd.arg("-shared").arg("-fPIC").arg("-o").arg(&so_path);
+        if let Ok(entries) = std::fs::read_dir(&out_dir) {
+            for entry in entries.flatten() {
+                let path = entry.path();
+                if path.extension().map_or(false, |e| e == "o") {
+                    cmd.arg(&path);
+                }
+            }
+        }
+        let status = cmd.status().expect("Failed to link .so");
+        if !status.success() {
+            panic!("Failed to link shared library");
+        }
     }
 
     // Create VST3 bundle
