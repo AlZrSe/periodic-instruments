@@ -168,17 +168,7 @@ jobs:
           readelf --dyn-syms "$BUNDLE_PATH/Contents/x86_64-linux/Periodic Instruments.so" | grep -iE "GetPluginFactory|ModuleEntry|ModuleExit" || echo "NONE FOUND"
           echo "=== ldd ==="
           ldd "$BUNDLE_PATH/Contents/x86_64-linux/Periodic Instruments.so"
-          echo "=== python ctypes probe ==="
-          python3 - <<'PY'
-import ctypes
-p = "target/release/Periodic Instruments.vst3/Contents/x86_64-linux/Periodic Instruments.so"
-lib = ctypes.CDLL(p, mode=ctypes.RTLD_NOW)
-print("loaded OK")
-gf = lib.GetPluginFactory
-gf.restype = ctypes.c_void_p
-factory = gf()
-print("factory ptr:", hex(factory) if factory else None)
-PY
+          echo "=== done diagnostics ==="
       - name: Download pluginval (Linux)
         id: download-pluginval-linux
         uses: actions/cache@v4
