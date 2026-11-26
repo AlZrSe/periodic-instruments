@@ -82,6 +82,8 @@ fn main() {
     }
     build.file(vst3_sdk.join("public.sdk").join("source").join("main").join("moduleinit.cpp"));
     build.file(vst3_sdk.join("public.sdk").join("source").join("main").join("pluginfactory.cpp"));
+    // hosting helpers needed by some SDK components
+    build.file(vst3_sdk.join("public.sdk").join("source").join("vst").join("hosting").join("processdata.cpp"));
 
     // Compile the plugin source
     build.file("src/vst3/periodic_instruments.cpp");
