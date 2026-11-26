@@ -3,7 +3,8 @@
 
 #include "public.sdk/source/vst/vstaudioeffect.h"
 #include "public.sdk/source/vst/vsteditcontroller.h"
-#include "public.sdk/source/main/pluginfactory_constexpr.h"
+#include "public.sdk/source/main/pluginfactory.h"
+#include "base/ustring.h"
 
 using namespace Steinberg;
 using namespace Steinberg::Vst;
@@ -30,8 +31,8 @@ public:
 		tresult result = AudioEffect::initialize (context);
 		if (result == kResultTrue)
 		{
-			addAudioInput (USTRING ("Audio Input"), SpeakerArr::kStereo);
-			addAudioOutput (USTRING ("Audio Output"), SpeakerArr::kStereo);
+			addAudioInput (STR16 ("Audio Input"), SpeakerArr::kStereo);
+			addAudioOutput (STR16 ("Audio Output"), SpeakerArr::kStereo);
 		}
 		return result;
 	}
@@ -103,8 +104,8 @@ public:
 		const char* titles[] = {"Element Selector", "Mass", "Reactivity", "State", "Radiance"};
 		const char* shortTitles[] = {"Element", "Mass", "React", "State", "Rad"};
 
-		UString (info.title, 64).assign (titles[paramIndex]);
-		UString (info.shortTitle, 64).assign (shortTitles[paramIndex]);
+		UString (info.title, 64).assign (titles[paramIndex], -1);
+		UString (info.shortTitle, 64).assign (shortTitles[paramIndex], -1);
 		UString (info.units, 64).assign ("");
 
 		info.id = paramIndex;
@@ -130,31 +131,38 @@ public:
 static FUnknown* createProcessor (void*) { return (IAudioProcessor*)new PeriodicInstrumentsProcessor (); }
 static FUnknown* createController (void*) { return (IEditController*)new PeriodicInstrumentsController (); }
 
-#define stringPluginName "Periodic Instruments"
-#define stringPluginVendor "AlZrSe"
+// InitModule and DeinitModule are provided by the SDK's moduleinit.cpp
 
-BEGIN_FACTORY_DEF (stringPluginVendor, "https://github.com/AlZrSe/periodic-instruments", "info@alzrse.com", 2)
+extern "C" {
 
-	DEF_CLASS (kPeriodicInstrumentsProcessorUID,
-	           PClassInfo::kManyInstances,
-	           kVstAudioEffectClass,
-	           stringPluginName,
-	           0,
-	           "Instrument|Synth",
-	           "0.1.0",
-	           kVstVersionString,
-	           createProcessor,
-	           nullptr)
+SMTG_EXPORT_SYMBOL IPluginFactory* PLUGIN_API GetPluginFactory ()
+{
+	static PFactoryInfo factoryInfo ("AlZrSe",
+		"https://github.com/AlZrSe/periodic-instruments",
+		"",
+		Vst::kDefaultFactoryFlags);
 
-	DEF_CLASS (kPeriodicInstrumentsControllerUID,
-	           PClassInfo::kManyInstances,
-	           kVstComponentControllerClass,
-	           stringPluginName "Controller",
-	           0,
-	           nullptr,
-	           "0.1.0",
-	           kVstVersionString,
-	           createController,
-	           nullptr)
+	static CPluginFactory factory (factoryInfo);
 
-END_FACTORY
+	static bool once = true;
+	if (once)
+	{
+		once = false;
+
+		static PClassInfo processorInfo (kPeriodicInstrumentsProcessorUID,
+			PClassInfo::kManyInstances,
+			kVstAudioEffectClass,
+			"Periodic Instruments");
+		factory.registerClass (&processorInfo, createProcessor);
+
+		static PClassInfo controllerInfo (kPeriodicInstrumentsControllerUID,
+			PClassInfo::kManyInstances,
+			kVstComponentControllerClass,
+			"Periodic Instruments Controller");
+		factory.registerClass (&controllerInfo, createController);
+	}
+
+	return &factory;
+}
+
+} // extern "C"
