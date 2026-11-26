@@ -31,26 +31,38 @@ jobs:
       - name: Install Rust toolchain (Windows)
         uses: dtolnay/rust-toolchain@stable
 
-      - name: Build VST3 plugin (Windows)
+      - name: Install MSVC target (Windows)
+        shell: pwsh
+        run: |
+          Write-Host "Installing MSVC target..."
+          rustup target add x86_64-pc-windows-msvc
+          rustup default stable-x86_64-pc-windows-msvc
+
+- name: Build VST3 plugin (Windows)
         shell: pwsh
         run: |
           Write-Host "Building VST3 plugin..."
-          # Set up CC environment variables for cc crate
-          $env:CC = "cl.exe"
-          $env:CXX = "cl.exe"
-          cargo build --release 2>&1 | Tee-Object -Variable buildOutput
+          cargo build --release --target x86_64-pc-windows-msvc 2>&1 | Tee-Object -Variable buildOutput
           Write-Host "Build output:" 
           $buildOutput
-          $bundlePath = "${{ env.VST3_BUNDLE_PATH }}"
+          # The bundle will be at target/x86_64-pc-windows-msvc/release/Periodic Instruments.vst3
+          $bundlePath = "target/x86_64-pc-windows-msvc/release/Periodic Instruments.vst3"
           if (-not (Test-Path $bundlePath)) {
             Write-Error "VST3 bundle not found at $bundlePath after build"
-            Write-Host "Contents of target/release:"
-            Get-ChildItem "target/release" -Force
+            Write-Host "Contents of target/x86_64-pc-windows-msvc/release:"
+            Get-ChildItem "target/x86_64-pc-windows-msvc/release" -Force
             Write-Host "Contents of target:"
             Get-ChildItem "target" -Force -Recurse -ErrorAction SilentlyContinue | Where-Object { $_.Name -like "*.vst3" }
             exit 1
           }
           Write-Host "Built VST3 bundle at $bundlePath"
+          # Copy to expected location for later steps
+          $expectedPath = "${{ env.VST3_BUNDLE_PATH }}"
+          if (-not (Test-Path (Split-Path $expectedPath -Parent))) {
+            New-Item -ItemType Directory -Path (Split-Path $expectedPath -Parent) -Force
+          }
+          Copy-Item $bundlePath $expectedPath -Force
+          Write-Host "Copied bundle to $expectedPath"
 
       - name: Download pluginval (Windows)
         id: download-pluginval-windows
