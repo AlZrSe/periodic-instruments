@@ -28,7 +28,7 @@ fn main() {
          .define("VST_VERSION_STR", Some("\"0.1.0\""))
          .define("NDEBUG", Some("1"))
          .opt_level(3);
-    
+
     // Platform-specific settings
     #[cfg(target_os = "windows")]
     {
@@ -52,47 +52,16 @@ fn main() {
     build.include(vst3_sdk.join("public.sdk").join("source"));
     build.include(vst3_sdk.join("base"));
 
-    // Explicitly list only the SDK files we actually need for a minimal VST3 plugin.
-    // This avoids redefinition errors from headers with const/inline definitions
-    // included in multiple compilation units (problematic on MSVC).
-    let sdk_files = [
-        // Base core
-        "base/funknown.cpp",
-        "base/ustring.cpp",
-        "base/conststringtable.cpp",
-        "base/source/fobject.cpp",
-        "base/source/fstring.cpp",
-        "base/source/fbuffer.cpp",
-        "base/source/fstreamer.cpp",
-        "base/thread/source/flock.cpp",
-        "base/thread/source/fcondition.cpp",
-        "base/coreiids.cpp",
-        
-        // VST3 core
-        "public.sdk/source/vst/vstcomponent.cpp",
-        "public.sdk/source/vst/vstcomponentbase.cpp",
-        "public.sdk/source/vst/vsteditcontroller.cpp",
-        "public.sdk/source/vst/vstaudioeffect.cpp",
-        "public.sdk/source/vst/vstbus.cpp",
-        "public.sdk/source/vst/vstparameters.cpp",
-        "public.sdk/source/vst/vstpresetfile.cpp",
-        "public.sdk/source/vst/vstrepresentation.cpp",
-        "public.sdk/source/vst/vstinitiids.cpp",
-        
-        // Common
-        "public.sdk/source/common/pluginview.cpp",
-        "public.sdk/source/common/commoniids.cpp",
-        
-        // Module (platform-independent)
-        "public.sdk/source/main/moduleinit.cpp",
-        "public.sdk/source/main/pluginfactory.cpp",
-    ];
-    
-    for f in &sdk_files {
-        build.file(vst3_sdk.join(f));
-    }
+    // Compile ONLY the essential files:
+    // - Our plugin source
+    // - Platform entry point (dllmain.cpp on Windows, linuxmain.cpp on Linux, macmain.cpp on macOS)
+    // - moduleinit.cpp (module initialization)
+    // - pluginfactory.cpp (factory implementation)
+    // - processdata.cpp (hosting helpers for ProcessData)
+    // The SDK headers are included via include paths; we don't compile SDK .cpp files directly
+    // to avoid redefinition errors from headers with const/inline definitions on MSVC.
 
-    // Compile SDK main files (platform entry point)
+    // Platform entry point
     if cfg!(target_os = "windows") {
         build.file(vst3_sdk.join("public.sdk").join("source").join("main").join("dllmain.cpp"));
     } else if cfg!(target_os = "linux") {
@@ -100,10 +69,17 @@ fn main() {
     } else if cfg!(target_os = "macos") {
         build.file(vst3_sdk.join("public.sdk").join("source").join("main").join("macmain.cpp"));
     }
-    // hosting helpers needed by some SDK components
+
+    // Module initialization
+    build.file(vst3_sdk.join("public.sdk").join("source").join("main").join("moduleinit.cpp"));
+
+    // Factory
+    build.file(vst3_sdk.join("public.sdk").join("source").join("main").join("pluginfactory.cpp"));
+
+    // Hosting helpers
     build.file(vst3_sdk.join("public.sdk").join("source").join("vst").join("hosting").join("processdata.cpp"));
 
-    // Compile the plugin source
+    // Our plugin source
     build.file("src/vst3/periodic_instruments.cpp");
 
     if cfg!(target_os = "windows") {
