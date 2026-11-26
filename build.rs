@@ -51,6 +51,8 @@ fn main() {
                     if exclude.contains(&name) { continue; }
                     collect_cpp(&path, out, exclude);
                 } else if path.extension().map_or(false, |e| e == "cpp") {
+                    let fname = path.file_name().and_then(|n| n.to_str()).unwrap_or("");
+                    if fname.contains("vstgui") { continue; }
                     out.push(path);
                 }
             }
@@ -58,7 +60,7 @@ fn main() {
     }
     // Exclude the "main" directory from auto-collection; we add the correct
     // platform entry point manually below.
-    let exclude = ["aaxwrapper", "auwrapper", "auv3wrapper", "interappaudio", "main"];
+    let exclude = ["aaxwrapper", "auwrapper", "auv3wrapper", "interappaudio", "main", "vstgui"];
     let mut sdk_sources: Vec<PathBuf> = Vec::new();
     collect_cpp(&vst3_sdk.join("base"), &mut sdk_sources, &exclude);
     collect_cpp(&vst3_sdk.join("public.sdk").join("source"), &mut sdk_sources, &exclude);
