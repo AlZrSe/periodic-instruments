@@ -233,7 +233,8 @@ jobs:
           LOG_FILE="${{ runner.temp }}/pluginval-level5-linux.log"
           rm -f "$BUNDLE/Contents/moduleinfo.json"
           echo "Running pluginval Level 5 on $BUNDLE"
-          xvfb-run -a "$PLUGINVAL" --strictness-level 5 "$BUNDLE" 2>&1 | tee "$LOG_FILE"
+          which gdb || sudo apt-get install -y gdb
+          xvfb-run -a gdb -batch -ex run -ex bt "$PLUGINVAL" --args "$PLUGINVAL" --strictness-level 5 "$BUNDLE" 2>&1 | tee "$LOG_FILE" || true
           EXIT_CODE=${PIPESTATUS[0]}
           echo "Exit code: $EXIT_CODE"
           echo "LOG_FILE=$LOG_FILE" >> $GITHUB_ENV
