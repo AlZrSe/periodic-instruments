@@ -153,15 +153,7 @@ static Steinberg::FUnknown* createController (void*)
 	return (Steinberg::Vst::IEditController*)new PeriodicInstrumentsController ();
 }
 
-bool InitModule ()
-{
-	return true;
-}
-
-bool DeinitModule ()
-{
-	return true;
-}
+// InitModule and DeinitModule are provided by the SDK's moduleinit.cpp
 
 extern "C" {
 
