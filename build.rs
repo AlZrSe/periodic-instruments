@@ -55,9 +55,9 @@ fn main() {
     build.include(vst3_sdk.join("public.sdk").join("source"));
     build.include(vst3_sdk.join("base"));
 
-    // Platform entry point
+    // Platform entry point - use our minimal custom entry points
     if cfg!(target_os = "windows") {
-        build.file(vst3_sdk.join("public.sdk").join("source").join("main").join("dllmain.cpp"));
+        build.file("src/vst3/entry_windows.cpp");
     } else if cfg!(target_os = "linux") {
         build.file(vst3_sdk.join("public.sdk").join("source").join("main").join("linuxmain.cpp"));
     } else if cfg!(target_os = "macos") {
