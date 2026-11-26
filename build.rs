@@ -61,6 +61,11 @@ fn main() {
         build.file("src/vst3/entry_windows.cpp");
     } else if cfg!(target_os = "linux") {
         build.file(vst3_sdk.join("public.sdk").join("source").join("main").join("linuxmain.cpp"));
+        // On Linux, we need to compile additional SDK files to provide the VST3 factory
+        // These are safe to compile on Linux as they don't have the redefinition issues
+        build.file(vst3_sdk.join("public.sdk").join("source").join("main").join("moduleinit.cpp"));
+        build.file(vst3_sdk.join("public.sdk").join("source").join("main").join("pluginfactory.cpp"));
+        build.file(vst3_sdk.join("public.sdk").join("source").join("vst").join("hosting").join("processdata.cpp"));
     } else if cfg!(target_os = "macos") {
         build.file(vst3_sdk.join("public.sdk").join("source").join("main").join("macmain.cpp"));
     }
