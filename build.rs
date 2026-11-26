@@ -30,7 +30,8 @@ fn main() {
          .define("VST_VERSION_STR", Some("\"0.1.0\""))
          .define("NDEBUG", Some("1"))
          .opt_level(3)
-         .pic(true);
+         .pic(true)
+         .flag("-fvisibility=default");
 
     // Add VST3 SDK include paths
     build.include(&vst3_sdk);  // For "pluginterfaces/base/fplatform.h" style includes
