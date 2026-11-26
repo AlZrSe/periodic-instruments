@@ -149,7 +149,7 @@ jobs:
       - name: Install VST3 SDK dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y xvfb libxcb-cursor0 libxkbcommon-x11-0
+          sudo apt-get install -y xvfb libxcb-cursor0 libxkbcommon-x11-0 gdb
 
       - name: Build VST3 plugin (Linux)
         run: |
