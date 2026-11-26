@@ -169,7 +169,10 @@ jobs:
           echo "=== ldd ==="
           ldd "$BUNDLE_PATH/Contents/x86_64-linux/Periodic Instruments.so"
           echo "=== done diagnostics ==="
-      - name: Download pluginval (Linux)
+      - name: Probe VST3 module (Linux)
+        run: |
+          g++ -std=c++17 -I vst3sdk -I vst3sdk/pluginterfaces -I vst3sdk/public.sdk/source -I vst3sdk/base tests/vst3_probe.cpp -o /tmp/vst3_probe -ldl
+          /tmp/vst3_probe      - name: Download pluginval (Linux)
         id: download-pluginval-linux
         uses: actions/cache@v4
         with:
