@@ -162,7 +162,10 @@ jobs:
             exit 1
           fi
           echo "Built VST3 bundle at $BUNDLE_PATH"
-
+          echo "=== Exported symbols (nm -D) ==="
+          nm -D --defined-only "$BUNDLE_PATH/Contents/x86_64-linux/Periodic Instruments.so" | grep -iE "GetPluginFactory|ModuleEntry|ModuleExit" || echo "NONE FOUND"
+          echo "=== readelf dynsym ==="
+          readelf --dyn-syms "$BUNDLE_PATH/Contents/x86_64-linux/Periodic Instruments.so" | grep -iE "GetPluginFactory|ModuleEntry|ModuleExit" || echo "NONE FOUND"
       - name: Download pluginval (Linux)
         id: download-pluginval-linux
         uses: actions/cache@v4
