@@ -5,7 +5,8 @@
 #include "public.sdk/source/vst/vsteditcontroller.h"
 #include "public.sdk/source/main/pluginfactory.h"
 #include "base/ustring.h"
-#include "base/fstrdefs.h"
+// Note: fstrdefs.h intentionally omitted - it contains constexpr function definitions
+// that cause redefinition errors on MSVC when included in multiple compilation units.
 
 using namespace Steinberg;
 using namespace Steinberg::Vst;

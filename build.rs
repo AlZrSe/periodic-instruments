@@ -8,6 +8,7 @@ use std::path::{Path, PathBuf};
 fn main() {
     println!("cargo:rerun-if-changed=src/vst3/periodic_instruments.cpp");
     println!("cargo:rerun-if-changed=build.rs");
+    println!("cargo:rerun-if-changed=src/vst3/entry_windows.cpp");
     println!("cargo:rerun-if-changed=src/vst3/moduleinfo.json");
     println!("cargo:rerun-if-changed=vst3sdk");
 
@@ -23,7 +24,7 @@ fn main() {
     }
 
     // Build the C++ VST3 plugin using the `cc` crate
-    // We ONLY compile our plugin source + platform entry point.
+    // We ONLY compile our plugin source + minimal platform entry point.
     // We DO NOT compile any SDK .cpp files - the SDK is header-only for us.
     // This avoids redefinition errors from headers with const/inline function definitions.
     let mut build = cc::Build::new();
@@ -55,7 +56,7 @@ fn main() {
     build.include(vst3_sdk.join("public.sdk").join("source"));
     build.include(vst3_sdk.join("base"));
 
-    // Platform entry point - use our minimal custom entry points
+    // Platform entry point - use our minimal custom entry point for Windows
     if cfg!(target_os = "windows") {
         build.file("src/vst3/entry_windows.cpp");
     } else if cfg!(target_os = "linux") {
