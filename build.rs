@@ -88,19 +88,23 @@ fn main() {
         // Collect all .o files
         let mut cmd = Command::new("g++");
         cmd.arg("-shared").arg("-fPIC").arg("-Wl,--export-dynamic").arg("-o").arg(&so_path);
+        let mut o_count = 0;
         if let Ok(entries) = std::fs::read_dir(&out_dir) {
             for entry in entries.flatten() {
                 let path = entry.path();
                 if path.extension().map_or(false, |e| e == "o") {
                     cmd.arg(&path);
+                    o_count += 1;
                 }
             }
         }
+        eprintln!("DEBUG: collected {} .o files for linking", o_count);
         cmd.arg("-lstdc++");
         let status = cmd.status().expect("Failed to link .so");
         if !status.success() {
             panic!("Failed to link shared library");
         }
+        let _ = Command::new("nm").arg("-D").arg("--defined-only").arg(&so_path).status();
     }
 
     // Create VST3 bundle
