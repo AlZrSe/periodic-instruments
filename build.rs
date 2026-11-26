@@ -63,7 +63,7 @@ fn main() {
         }
     }
     let exclude = ["aaxwrapper", "auwrapper", "auv3wrapper", "interappaudio",
-                   "main", "vstgui", "basewrapper", "hosting", "test", "tests",
+                   "main", "vstgui", "basewrapper", "test", "tests",
                    "samples"];
     let mut sdk_sources: Vec<PathBuf> = Vec::new();
     collect_cpp(&vst3_sdk.join("base"), &mut sdk_sources, &exclude);
