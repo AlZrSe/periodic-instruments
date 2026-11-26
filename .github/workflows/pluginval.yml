@@ -34,7 +34,7 @@ jobs:
           & $installer --quiet --wait --norestart --nocache --add Microsoft.VisualStudio.Workload.VCTools --includeRecommended
           Write-Host "Visual C++ Build Tools installed."
 
-- name: Install Rust toolchain (Windows)
+      - name: Install Rust toolchain (Windows)
         shell: powershell
         run: |
           Write-Host "Installing Rust toolchain via rustup-init..."
