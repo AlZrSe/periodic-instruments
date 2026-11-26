@@ -24,23 +24,10 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Install Rust toolchain (Windows)
-        shell: powershell
-        run: |
-          Write-Host "Installing Rust toolchain..."
-          # Check if rustup is available
-          if (Get-Command rustup -ErrorAction SilentlyContinue) {
-            Write-Host "rustup found, installing stable toolchain..."
-            rustup install stable
-            rustup default stable
-          } else {
-            Write-Host "rustup not found, installing via winget..."
-            winget install -e --id Rustlang.Rustup --accept-source-agreements --accept-package-agreements
-            $env:PATH += ";$env:USERPROFILE\.cargo\bin"
-            rustup install stable
-            rustup default stable
-          }
-          Write-Host "Rust version: $(rustc --version)"
-          Write-Host "Cargo version: $(cargo --version)"
+        uses: actions/setup-rust@v1
+        with:
+          toolchain: stable
+          cache: false
 
       - name: Build VST3 plugin (Windows)
         shell: powershell
