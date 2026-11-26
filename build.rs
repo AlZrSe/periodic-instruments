@@ -111,12 +111,11 @@ fn main() {
     {
         use std::process::Command;
         let so_path = out_dir.join("libperiodic_instruments.so");
-        // Use version script to explicitly export VST3 symbols
+        // Use --export-dynamic to export all symbols
         let mut cmd = Command::new("g++");
         cmd.arg("-shared")
            .arg("-fPIC")
            .arg("-Wl,--export-dynamic")
-           .arg("-Wl,--version-script=-")
            .arg("-o")
            .arg(&so_path);
         if let Ok(entries) = std::fs::read_dir(&out_dir) {
@@ -128,30 +127,7 @@ fn main() {
             }
         }
         cmd.arg("-lstdc++");
-        // Write version script to stdin
-        use std::io::Write;
-        let mut child = cmd.stdin(std::process::Stdio::piped())
-                           .stdout(std::process::Stdio::piped())
-                           .stderr(std::process::Stdio::piped())
-                           .spawn()
-                           .expect("Failed to start linker");
-        if let Some(mut stdin) = child.stdin.take() {
-            // Version script to explicitly export VST3 factory symbols
-            let version_script = r#"
-VST3 {
-    global:
-        GetPluginFactory;
-        ModuleEntry;
-        ModuleExit;
-        InitModule;
-        DeinitModule;
-    local:
-        *;
-};
-"#;
-            stdin.write_all(version_script.as_bytes()).expect("Failed to write version script");
-        }
-        let status = child.wait().expect("Failed to wait for linker");
+        let status = cmd.status().expect("Failed to link .so");
         if !status.success() {
             panic!("Failed to link shared library");
         }
