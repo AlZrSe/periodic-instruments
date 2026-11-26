@@ -41,6 +41,7 @@ fn main() {
 
     // Also need base source for .cpp files
     build.file(vst3_sdk.join("base").join("funknown.cpp"));
+    build.file(vst3_sdk.join("base").join("coreiids.cpp"));
     build.file(vst3_sdk.join("base").join("ustring.cpp"));
     build.file(vst3_sdk.join("base").join("conststringtable.cpp"));
     build.file(vst3_sdk.join("base").join("source").join("fobject.cpp"));
