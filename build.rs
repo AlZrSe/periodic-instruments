@@ -60,7 +60,7 @@ fn main() {
     }
     // Exclude the "main" directory from auto-collection; we add the correct
     // platform entry point manually below.
-    let exclude = ["aaxwrapper", "auwrapper", "auv3wrapper", "interappaudio", "main", "vstgui"];
+    let exclude = ["aaxwrapper", "auwrapper", "auv3wrapper", "interappaudio", "main", "vstgui", "basewrapper"];
     let mut sdk_sources: Vec<PathBuf> = Vec::new();
     collect_cpp(&vst3_sdk.join("base"), &mut sdk_sources, &exclude);
     collect_cpp(&vst3_sdk.join("public.sdk").join("source"), &mut sdk_sources, &exclude);
