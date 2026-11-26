@@ -23,6 +23,9 @@ fn main() {
     }
 
     // Build the C++ VST3 plugin using the `cc` crate
+    // We ONLY compile our plugin source + platform entry point.
+    // We DO NOT compile any SDK .cpp files - the SDK is header-only for us.
+    // This avoids redefinition errors from headers with const/inline function definitions.
     let mut build = cc::Build::new();
     build.cpp(true)
          .define("VST_VERSION_STR", Some("\"0.1.0\""))
@@ -52,15 +55,6 @@ fn main() {
     build.include(vst3_sdk.join("public.sdk").join("source"));
     build.include(vst3_sdk.join("base"));
 
-    // Compile ONLY the essential files:
-    // - Our plugin source
-    // - Platform entry point (dllmain.cpp on Windows, linuxmain.cpp on Linux, macmain.cpp on macOS)
-    // - moduleinit.cpp (module initialization)
-    // - pluginfactory.cpp (factory implementation)
-    // - processdata.cpp (hosting helpers for ProcessData)
-    // The SDK headers are included via include paths; we don't compile SDK .cpp files directly
-    // to avoid redefinition errors from headers with const/inline definitions on MSVC.
-
     // Platform entry point
     if cfg!(target_os = "windows") {
         build.file(vst3_sdk.join("public.sdk").join("source").join("main").join("dllmain.cpp"));
@@ -69,15 +63,6 @@ fn main() {
     } else if cfg!(target_os = "macos") {
         build.file(vst3_sdk.join("public.sdk").join("source").join("main").join("macmain.cpp"));
     }
-
-    // Module initialization
-    build.file(vst3_sdk.join("public.sdk").join("source").join("main").join("moduleinit.cpp"));
-
-    // Factory
-    build.file(vst3_sdk.join("public.sdk").join("source").join("main").join("pluginfactory.cpp"));
-
-    // Hosting helpers
-    build.file(vst3_sdk.join("public.sdk").join("source").join("vst").join("hosting").join("processdata.cpp"));
 
     // Our plugin source
     build.file("src/vst3/periodic_instruments.cpp");
