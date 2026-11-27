@@ -22,8 +22,13 @@ using namespace Steinberg::Vst;
 //------------------------------------------------------------------------
 // Plugin IDs
 //------------------------------------------------------------------------
-static const FUID kProcessorUID (0x70657269, 0x6F646963, 0x496E7374, 0x72756D00);
-static const FUID kControllerUID (0x70657269, 0x6F646963, 0x496E7374, 0x72430000);
+// CIDs must match manifest.ttl exactly (big-endian byte order as per VST3 spec)
+// manifest.ttl Processor CID: "706572696f646963496e737472756d00"
+// Bytes: 70 65 72 69 6f 64 69 63 49 6e 73 74 72 75 6d 00
+static const FUID kProcessorUID ((const uint8[]){0x70, 0x65, 0x72, 0x69, 0x6f, 0x64, 0x69, 0x63, 0x49, 0x6e, 0x73, 0x74, 0x72, 0x75, 0x6d, 0x00});
+// manifest.ttl Controller CID: "706572696f646963496e737472430000"
+// Bytes: 70 65 72 69 6f 64 69 63 49 6e 73 74 72 43 00 00
+static const FUID kControllerUID ((const uint8[]){0x70, 0x65, 0x72, 0x69, 0x6f, 0x64, 0x69, 0x63, 0x49, 0x6e, 0x73, 0x74, 0x72, 0x43, 0x00, 0x00});
 
 //------------------------------------------------------------------------
 // Audio Processor
