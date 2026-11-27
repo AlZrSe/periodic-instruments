@@ -252,16 +252,26 @@ fn create_vst3_bundle(bundle_dir: &Path, out_dir: &Path) {
         eprintln!("DEBUG: manifest.ttl NOT FOUND at {:?}", manifest_src);
     }
 
-    // Also copy manifest.ttl to bundle root (some hosts look there)
-    if manifest_src.exists() {
-        fs::copy(manifest_src, bundle_dir.join("manifest.ttl"))
-            .expect("Failed to copy manifest.ttl to bundle root");
-        eprintln!("DEBUG: Copied manifest.ttl to bundle root");
+    // Remove manifest.ttl from bundle root if it exists (some process might create it there)
+    let manifest_root = bundle_dir.join("manifest.ttl");
+    if manifest_root.exists() {
+        fs::remove_file(&manifest_root).expect("Failed to remove manifest.ttl from bundle root");
+        eprintln!("DEBUG: Removed manifest.ttl from bundle root");
     }
 
     // Debug: list bundle contents
     eprintln!("DEBUG: Bundle contents:");
     if let Ok(entries) = fs::read_dir(&contents_dir) {
+        for entry in entries {
+            if let Ok(entry) = entry {
+                eprintln!("  {}", entry.path().display());
+            }
+        }
+    }
+    
+    // Debug: list bundle root contents
+    eprintln!("DEBUG: Bundle root contents:");
+    if let Ok(entries) = fs::read_dir(bundle_dir) {
         for entry in entries {
             if let Ok(entry) = entry {
                 eprintln!("  {}", entry.path().display());
