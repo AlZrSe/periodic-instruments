@@ -249,6 +249,13 @@ fn create_vst3_bundle(bundle_dir: &Path, out_dir: &Path, manifest_dir: &Path) {
         eprintln!("DEBUG: manifest.ttl NOT FOUND at {:?}", manifest_src);
     }
 
+    // Copy manifest.ttl to Contents/ (required by pluginval on Windows)
+    if manifest_src.exists() {
+        fs::copy(&manifest_src, contents_dir.join("manifest.ttl"))
+            .expect("Failed to copy manifest.ttl to bundle Contents/");
+        eprintln!("DEBUG: Copied manifest.ttl to bundle Contents/");
+    }
+
     // Create Resources directory (required by VST3 spec)
     let resources_dir = contents_dir.join("Resources");
     fs::create_dir_all(&resources_dir).expect("Failed to create Resources directory");
