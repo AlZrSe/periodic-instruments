@@ -22,11 +22,16 @@ using namespace Steinberg::Vst;
 //------------------------------------------------------------------------
 // Plugin IDs
 //------------------------------------------------------------------------
-// CIDs must match manifest.ttl exactly - use string constructor (32 hex chars = 16 bytes)
+// CIDs must match manifest.ttl exactly (big-endian byte order as per VST3 spec)
+// Use four uint32 constructor with little-endian byte order to match manifest.ttl bytes
 // manifest.ttl Processor CID: "706572696f646963496e737472756d00"
-static const FUID kProcessorUID ("706572696f646963496e737472756d00");
+// Bytes: 70 65 72 69 6f 64 69 63 49 6e 73 74 72 75 6d 00
+// As little-endian uint32: 0x69726570, 0x6369646f, 0x74736e49, 0x006d7572
+static const FUID kProcessorUID (0x69726570, 0x6369646f, 0x74736e49, 0x006d7572);
 // manifest.ttl Controller CID: "706572696f646963496e737472430000"
-static const FUID kControllerUID ("706572696f646963496e737472430000");
+// Bytes: 70 65 72 69 6f 64 69 63 49 6e 73 74 72 43 00 00
+// As little-endian uint32: 0x69726570, 0x6369646f, 0x74736e49, 0x00437272
+static const FUID kControllerUID (0x69726570, 0x6369646f, 0x74736e49, 0x00437272);
 
 //------------------------------------------------------------------------
 // Audio Processor
