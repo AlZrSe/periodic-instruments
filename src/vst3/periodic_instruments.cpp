@@ -124,20 +124,20 @@ void* moduleHandle = nullptr;
 // Internal init/deinit functions (must be declared before use)
 static int moduleCounter = 0; // counting for ModuleEntry/ModuleExit pairs
 
-bool InitModule ()
-{
-    // Called when the module is loaded
-    return true;
-}
-
-bool DeinitModule ()
-{
-    // Called when the module is unloaded
-    return true;
-}
-
 #if !defined(_MSC_VER)
 // Linux/macOS - export ModuleEntry/ModuleExit explicitly
+SMTG_EXPORT_SYMBOL __attribute__((used))
+bool InitModule ()
+{
+    return true;
+}
+
+SMTG_EXPORT_SYMBOL __attribute__((used))
+bool DeinitModule ()
+{
+    return true;
+}
+
 SMTG_EXPORT_SYMBOL __attribute__((used))
 bool ModuleEntry (void* sharedLibraryHandle)
 {
