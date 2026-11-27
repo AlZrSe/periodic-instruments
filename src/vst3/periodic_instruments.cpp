@@ -13,7 +13,7 @@
 // We define our own STR16 macro to avoid including fstrdefs.h via ustring.h.
 
 #ifndef STR16
-#define STR16(x) L##x
+#define STR16(x) u##x
 #endif
 
 using namespace Steinberg;
