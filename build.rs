@@ -232,31 +232,24 @@ fn create_vst3_bundle(bundle_dir: &Path, out_dir: &Path) {
         panic!("Compiled library not found in OUT_DIR");
     }
 
-    // Copy moduleinfo.json
-    let module_info_src = Path::new("src/vst3/moduleinfo.json");
-    if module_info_src.exists() {
-        fs::copy(module_info_src, contents_dir.join("moduleinfo.json"))
-            .expect("Failed to copy moduleinfo.json");
-        eprintln!("DEBUG: Copied moduleinfo.json to bundle");
-    } else {
-        eprintln!("DEBUG: moduleinfo.json NOT FOUND at {:?}", module_info_src);
-    }
-
-    // Copy manifest.ttl to Contents/
+    // Copy manifest.ttl to bundle root (required by VST3 spec)
     let manifest_src = Path::new("src/vst3/manifest.ttl");
     if manifest_src.exists() {
-        fs::copy(manifest_src, contents_dir.join("manifest.ttl"))
-            .expect("Failed to copy manifest.ttl");
-        eprintln!("DEBUG: Copied manifest.ttl to bundle Contents/");
+        fs::copy(manifest_src, bundle_dir.join("manifest.ttl"))
+            .expect("Failed to copy manifest.ttl to bundle root");
+        eprintln!("DEBUG: Copied manifest.ttl to bundle root");
     } else {
         eprintln!("DEBUG: manifest.ttl NOT FOUND at {:?}", manifest_src);
     }
 
-    // Remove manifest.ttl from bundle root if it exists (some process might create it there)
-    let manifest_root = bundle_dir.join("manifest.ttl");
-    if manifest_root.exists() {
-        fs::remove_file(&manifest_root).expect("Failed to remove manifest.ttl from bundle root");
-        eprintln!("DEBUG: Removed manifest.ttl from bundle root");
+    // Copy moduleinfo.json to bundle root for VST3 scanner
+    let module_info_src = Path::new("src/vst3/moduleinfo.json");
+    if module_info_src.exists() {
+        fs::copy(module_info_src, bundle_dir.join("moduleinfo.json"))
+            .expect("Failed to copy moduleinfo.json to bundle root");
+        eprintln!("DEBUG: Copied moduleinfo.json to bundle root");
+    } else {
+        eprintln!("DEBUG: moduleinfo.json NOT FOUND at {:?}", module_info_src);
     }
 
     // Debug: list bundle contents
