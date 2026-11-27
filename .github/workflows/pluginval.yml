@@ -240,6 +240,8 @@ jobs:
           echo ""
           echo "=== DEBUG: Exported symbols ==="
           nm -D --defined-only "$BUNDLE_PATH/Contents/x86_64-linux/Periodic Instruments.so" 2>/dev/null | grep -iE 'GetPluginFactory|ModuleEntry|ModuleExit' || echo "VST3 symbols NOT FOUND"
+           echo "=== DEBUG: Library dependencies ==="
+           ldd "$BUNDLE_PATH/Contents/x86_64-linux/Periodic Instruments.so" 2>&1 || echo "ldd failed"
           echo "=== DEBUG: All exported symbols ==="
           nm -D --defined-only "$BUNDLE_PATH/Contents/x86_64-linux/Periodic Instruments.so" 2>/dev/null | head -50
           echo "=== DEBUG: Check for gPluginFactory ==="
