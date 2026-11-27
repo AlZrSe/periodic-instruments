@@ -150,7 +150,14 @@ fn main() {
     let target_dir = PathBuf::from(env::var("CARGO_TARGET_DIR").unwrap_or_else(|_| {
         env::var("CARGO_MANIFEST_DIR").unwrap() + "/target"
     }));
-    let profile_dir = target_dir.join(&env::var("PROFILE").unwrap());
+    // When cross-compiling, the target directory includes the target triple
+    let target = env::var("TARGET").unwrap_or_else(|_| env::var("HOST").unwrap_or_default());
+    let profile = env::var("PROFILE").unwrap_or_else(|_| "release".to_string());
+    let profile_dir = if target != env::var("HOST").unwrap_or_default() {
+        target_dir.join(&target).join(&profile)
+    } else {
+        target_dir.join(&profile)
+    };
     let bundle_name = "Periodic Instruments.vst3";
     let bundle_dir = profile_dir.join(bundle_name);
 
