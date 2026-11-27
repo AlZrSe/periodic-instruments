@@ -232,22 +232,26 @@ fn create_vst3_bundle(bundle_dir: &Path, out_dir: &Path) {
         panic!("Compiled library not found in OUT_DIR");
     }
 
-    // Copy manifest.ttl to bundle root (required by VST3 spec)
+    // Create Resources directory (required by VST3 spec)
+    let resources_dir = contents_dir.join("Resources");
+    fs::create_dir_all(&resources_dir).expect("Failed to create Resources directory");
+
+    // Copy manifest.ttl to Contents/Resources/ (required by VST3 spec)
     let manifest_src = Path::new("src/vst3/manifest.ttl");
     if manifest_src.exists() {
-        fs::copy(manifest_src, bundle_dir.join("manifest.ttl"))
-            .expect("Failed to copy manifest.ttl to bundle root");
-        eprintln!("DEBUG: Copied manifest.ttl to bundle root");
+        fs::copy(manifest_src, resources_dir.join("manifest.ttl"))
+            .expect("Failed to copy manifest.ttl to bundle Contents/Resources/");
+        eprintln!("DEBUG: Copied manifest.ttl to bundle Contents/Resources/");
     } else {
         eprintln!("DEBUG: manifest.ttl NOT FOUND at {:?}", manifest_src);
     }
 
-    // Copy moduleinfo.json to bundle root for VST3 scanner
+    // Copy moduleinfo.json to Contents/Resources/ for VST3 scanner
     let module_info_src = Path::new("src/vst3/moduleinfo.json");
     if module_info_src.exists() {
-        fs::copy(module_info_src, bundle_dir.join("moduleinfo.json"))
-            .expect("Failed to copy moduleinfo.json to bundle root");
-        eprintln!("DEBUG: Copied moduleinfo.json to bundle root");
+        fs::copy(module_info_src, resources_dir.join("moduleinfo.json"))
+            .expect("Failed to copy moduleinfo.json to bundle Contents/Resources/");
+        eprintln!("DEBUG: Copied moduleinfo.json to bundle Contents/Resources/");
     } else {
         eprintln!("DEBUG: moduleinfo.json NOT FOUND at {:?}", module_info_src);
     }
