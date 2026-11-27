@@ -6,6 +6,10 @@ use std::env;
 use std::path::{Path, PathBuf};
 
 fn main() {
+    eprintln!("=== build.rs STARTED ===");
+    eprintln!("TARGET: {:?}", env::var("TARGET"));
+    eprintln!("PROFILE: {:?}", env::var("PROFILE"));
+    eprintln!("OUT_DIR: {:?}", env::var("OUT_DIR"));
     println!("cargo:rerun-if-changed=src/vst3/periodic_instruments.cpp");
     println!("cargo:rerun-if-changed=build.rs");
     println!("cargo:rerun-if-changed=src/vst3/entry_windows.cpp");
@@ -246,6 +250,13 @@ fn create_vst3_bundle(bundle_dir: &Path, out_dir: &Path) {
         eprintln!("DEBUG: manifest.ttl NOT FOUND at {:?}", manifest_src);
     }
 
+    // Copy manifest.ttl to Contents/ (also needed by some VST3 scanners)
+    if manifest_src.exists() {
+        fs::copy(manifest_src, contents_dir.join("manifest.ttl"))
+            .expect("Failed to copy manifest.ttl to bundle Contents/");
+        eprintln!("DEBUG: Copied manifest.ttl to bundle Contents/");
+    }
+
     // Copy manifest.ttl to Contents/Resources/ (also required by VST3 spec)
     let resources_dir = contents_dir.join("Resources");
     fs::create_dir_all(&resources_dir).expect("Failed to create Resources directory");
@@ -263,6 +274,13 @@ fn create_vst3_bundle(bundle_dir: &Path, out_dir: &Path) {
         eprintln!("DEBUG: Copied moduleinfo.json to bundle Contents/Resources/");
     } else {
         eprintln!("DEBUG: moduleinfo.json NOT FOUND at {:?}", module_info_src);
+    }
+
+    // Also copy moduleinfo.json to Contents/ (some scanners look there)
+    if module_info_src.exists() {
+        fs::copy(module_info_src, contents_dir.join("moduleinfo.json"))
+            .expect("Failed to copy moduleinfo.json to bundle Contents/");
+        eprintln!("DEBUG: Copied moduleinfo.json to bundle Contents/");
     }
 
     // Debug: list bundle contents
