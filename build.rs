@@ -153,11 +153,9 @@ fn main() {
     // When cross-compiling, the target directory includes the target triple
     let target = env::var("TARGET").unwrap_or_else(|_| env::var("HOST").unwrap_or_default());
     let profile = env::var("PROFILE").unwrap_or_else(|_| "release".to_string());
-    let profile_dir = if target != env::var("HOST").unwrap_or_default() {
-        target_dir.join(&target).join(&profile)
-    } else {
-        target_dir.join(&profile)
-    };
+    // The build output goes to target/<target>/<profile>/build/.../out
+    // The final binary goes to target/<target>/<profile>/
+    let profile_dir = target_dir.join(&target).join(&env::var("PROFILE").unwrap_or_else(|_| "release".to_string()));
     let bundle_name = "Periodic Instruments.vst3";
     let bundle_dir = profile_dir.join(bundle_name);
 
@@ -174,19 +172,26 @@ fn create_vst3_bundle(bundle_dir: &Path, out_dir: &Path) {
     fs::create_dir_all(&contents_dir).expect("Failed to create bundle directory");
 
     // Platform-specific binary directory
-    #[cfg(target_os = "linux")]
-    let platform_dir = contents_dir.join("x86_64-linux");
-    #[cfg(target_os = "windows")]
-    let platform_dir = contents_dir.join("x86_64-win");
-    #[cfg(target_os = "macos")]
-    let platform_dir = contents_dir.join("MacOS");
+    let target_os = env::var("TARGET").unwrap_or_else(|_| env::var("HOST").unwrap_or_default());
+    let platform_dir = if target_os.contains("linux") {
+        contents_dir.join("x86_64-linux")
+    } else if target_os.contains("windows") {
+        contents_dir.join("x86_64-win")
+    } else if target_os.contains("macos") || target_os.contains("darwin") {
+        contents_dir.join("MacOS")
+    } else {
+        // Default fallback
+        contents_dir.join("x86_64-linux")
+    };
 
     fs::create_dir_all(&platform_dir).expect("Failed to create platform directory");
 
     // Find and copy the compiled library to the bundle
-    let possible_names = if cfg!(target_os = "windows") {
+    // For cross-compilation, the target OS might not match the build OS
+    let target_os = env::var("TARGET").unwrap_or_else(|_| env::var("HOST").unwrap_or_default());
+    let possible_names = if target_os.contains("windows") {
         vec!["periodic_instruments.dll", "periodic_instruments.lib"]
-    } else if cfg!(target_os = "macos") {
+    } else if target_os.contains("macos") || target_os.contains("darwin") {
         vec!["libperiodic_instruments.dylib", "periodic_instruments.dylib"]
     } else {
         vec!["libperiodic_instruments.so", "periodic_instruments.so"]
