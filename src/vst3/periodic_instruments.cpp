@@ -41,7 +41,7 @@ class PeriodicInstrumentsProcessor : public AudioEffect
 public:
     PeriodicInstrumentsProcessor () : AudioEffect ()
     {
-        setControllerClass (kControllerUID);
+        // No controller for now to test loading
     }
 
     tresult PLUGIN_API initialize (FUnknown* context) override
