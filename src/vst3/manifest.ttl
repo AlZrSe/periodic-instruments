@@ -1,4 +1,4 @@
-@prefix vst: <http://www.steinberg.net/vst3#> .
+@prefix vst: <urn:steinberg:vst:> .
 @prefix doap: <http://usefulinc.com/ns/doap#> .
 @prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
 
