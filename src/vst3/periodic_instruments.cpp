@@ -92,65 +92,9 @@ public:
 };
 
 //------------------------------------------------------------------------
-// Controller
-//------------------------------------------------------------------------
-class PeriodicInstrumentsController : public EditController
-{
-public:
-    tresult PLUGIN_API initialize (FUnknown* context) override
-    {
-        tresult result = EditController::initialize (context);
-        if (result == kResultTrue)
-        {
-            parameters.addParameter (STR16 ("Element Selector"), nullptr, 0, 0.0,
-                                    ParameterInfo::kCanAutomate | ParameterInfo::kIsList, 93);
-            parameters.addParameter (STR16 ("Mass"), nullptr, 1, 0.5, ParameterInfo::kCanAutomate, 0);
-            parameters.addParameter (STR16 ("Reactivity"), nullptr, 2, 0.5, ParameterInfo::kCanAutomate, 0);
-            parameters.addParameter (STR16 ("State"), nullptr, 3, 0.5, ParameterInfo::kCanAutomate, 0);
-            parameters.addParameter (STR16 ("Radiance"), nullptr, 4, 0.5, ParameterInfo::kCanAutomate, 0);
-        }
-        return result;
-    }
-
-    tresult PLUGIN_API getParameterInfo (int32 paramIndex, ParameterInfo& info) override
-    {
-        if (paramIndex >= 5)
-            return kResultFalse;
-
-        const char* titles[] = {"Element Selector", "Mass", "Reactivity", "State", "Radiance"};
-        const char* shortTitles[] = {"Element", "Mass", "React", "State", "Rad"};
-
-        info.title[0] = 0;
-        info.shortTitle[0] = 0;
-        info.units[0] = 0;
-
-        for (int i = 0; titles[paramIndex][i] && i < 63; i++)
-            info.title[i] = titles[paramIndex][i];
-        for (int i = 0; shortTitles[paramIndex][i] && i < 63; i++)
-            info.shortTitle[i] = shortTitles[paramIndex][i];
-
-        info.id = paramIndex;
-        info.stepCount = (paramIndex == 0) ? 93 : 0;
-        info.defaultNormalizedValue = (paramIndex == 0) ? 0.0 : 0.5;
-        info.unitId = 0;
-        info.flags = ParameterInfo::kCanAutomate;
-        if (paramIndex == 0)
-            info.flags |= ParameterInfo::kIsList;
-
-        return kResultTrue;
-    }
-
-    IPlugView* PLUGIN_API createView (const char* name) override
-    {
-        return nullptr;
-    }
-};
-
-//------------------------------------------------------------------------
 // Factory
 //------------------------------------------------------------------------
 static FUnknown* createProcessor (void*) { return (IAudioProcessor*)new PeriodicInstrumentsProcessor (); }
-static FUnknown* createController (void*) { return (IEditController*)new PeriodicInstrumentsController (); }
 
 extern "C" {
 
@@ -177,12 +121,6 @@ IPluginFactory* PLUGIN_API GetPluginFactory ()
             kVstAudioEffectClass,
             "Periodic Instruments");
         factory->registerClass (&processorInfo, createProcessor);
-
-        static PClassInfo controllerInfo (kControllerUID,
-            PClassInfo::kManyInstances,
-            kVstComponentControllerClass,
-            "Periodic Instruments Controller");
-        factory->registerClass (&controllerInfo, createController);
     }
     else
     {
