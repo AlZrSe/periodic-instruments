@@ -54,20 +54,6 @@ public:
 
     tresult PLUGIN_API process (ProcessData& data) override
     {
-        if (data.outputs)
-        {
-            for (int32 i = 0; i < data.numOutputs; ++i)
-            {
-                for (int32 ch = 0; ch < data.outputs[i].numChannels; ++ch)
-                {
-                    if (data.outputs[i].channelBuffers32[ch])
-                    {
-                        memset (data.outputs[i].channelBuffers32[ch], 0,
-                                data.numSamples * sizeof (float));
-                    }
-                }
-            }
-        }
         return kResultTrue;
     }
 
