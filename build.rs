@@ -106,9 +106,8 @@ fn main() {
         build.compile("periodic_instruments");
     }
 
-    // Link the static library into a shared library (.so)
-    #[cfg(target_os = "linux")]
-    {
+    // Link the static library into a shared library
+    if cfg!(target_os = "linux") {
         use std::process::Command;
         let so_path = out_dir.join("libperiodic_instruments.so");
         // Collect all .o files
@@ -144,6 +143,38 @@ fn main() {
             .arg("-c")
             .arg(format!("nm -D --defined-only {} | grep -iE 'GetPluginFactory|ModuleEntry|ModuleExit|gPluginFactory'", so_path.display()))
             .status();
+    } else if cfg!(target_os = "windows") {
+        // On Windows, link the static library into a DLL
+        use std::process::Command;
+        let dll_path = out_dir.join("periodic_instruments.dll");
+        // The cc crate creates a static library, we need to link it into a DLL
+        // First find the static library
+        let mut lib_path = None;
+        if let Ok(entries) = std::fs::read_dir(&out_dir) {
+            for entry in entries.flatten() {
+                let path = entry.path();
+                if path.extension().map_or(false, |e| e == "lib") {
+                    lib_path = Some(path);
+                    break;
+                }
+            }
+        }
+        if let Some(lib_path) = lib_path {
+            let mut cmd = Command::new("link.exe");
+            cmd.arg("/DLL")
+               .arg("/OUT:".to_string() + &dll_path.display().to_string())
+               .arg(&lib_path)
+               .arg("user32.lib")
+               .arg("kernel32.lib")
+               .arg("advapi32.lib");
+            let status = cmd.status().expect("Failed to link DLL");
+            if !status.success() {
+                panic!("Failed to link shared library (DLL)");
+            }
+            eprintln!("DEBUG: Created DLL at {}", dll_path.display());
+        } else {
+            eprintln!("WARNING: No static library found in OUT_DIR, cannot create DLL");
+        }
     }
 
     // Create VST3 bundle
