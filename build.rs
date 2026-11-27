@@ -240,6 +240,15 @@ fn create_vst3_bundle(bundle_dir: &Path, out_dir: &Path, manifest_dir: &Path) {
     let manifest_src = manifest_dir.join("src/vst3/manifest.ttl");
     let module_info_src = manifest_dir.join("src/vst3/moduleinfo.json");
 
+    // Copy manifest.ttl to bundle root (required by some VST3 scanners like pluginval on Windows)
+    if manifest_src.exists() {
+        fs::copy(&manifest_src, bundle_dir.join("manifest.ttl"))
+            .expect("Failed to copy manifest.ttl to bundle root");
+        eprintln!("DEBUG: Copied manifest.ttl to bundle root");
+    } else {
+        eprintln!("DEBUG: manifest.ttl NOT FOUND at {:?}", manifest_src);
+    }
+
     // Create Resources directory (required by VST3 spec)
     let resources_dir = contents_dir.join("Resources");
     fs::create_dir_all(&resources_dir).expect("Failed to create Resources directory");
@@ -249,8 +258,6 @@ fn create_vst3_bundle(bundle_dir: &Path, out_dir: &Path, manifest_dir: &Path) {
         fs::copy(&manifest_src, resources_dir.join("manifest.ttl"))
             .expect("Failed to copy manifest.ttl to bundle Contents/Resources/");
         eprintln!("DEBUG: Copied manifest.ttl to bundle Contents/Resources/");
-    } else {
-        eprintln!("DEBUG: manifest.ttl NOT FOUND at {:?}", manifest_src);
     }
 
     // Copy moduleinfo.json to Contents/Resources/ for VST3 scanner
