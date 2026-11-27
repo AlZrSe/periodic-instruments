@@ -6,6 +6,11 @@
 #include "pluginterfaces/vst/vstspeaker.h"
 #include "pluginterfaces/base/fplatform.h"
 
+// Forward declare CPluginFactory to allow gPluginFactory definition before pluginfactory.h include
+namespace Steinberg {
+    class CPluginFactory;
+}
+
 // Define and export gPluginFactory BEFORE including pluginfactory.h to avoid ambiguous symbol error
 // Must match SDK's declaration: CPluginFactory* in Steinberg namespace
 #if defined(_MSC_VER)
