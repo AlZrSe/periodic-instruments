@@ -44,13 +44,6 @@ public:
     {
     }
 
-    tresult PLUGIN_API initialize (FUnknown* context) override
-    {
-        // Use AudioEffect::initialize which adds default input and output
-        tresult result = AudioEffect::initialize (context);
-        return result;
-    }
-
     tresult PLUGIN_API process (ProcessData& data) override
     {
         return kResultTrue;
