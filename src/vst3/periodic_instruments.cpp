@@ -144,9 +144,18 @@ public:
 static FUnknown* createProcessor (void*) { return (IAudioProcessor*)new PeriodicInstrumentsProcessor (); }
 static FUnknown* createController (void*) { return (IEditController*)new PeriodicInstrumentsController (); }
 
+#if defined(_MSC_VER)
+CPluginFactory* gPluginFactory = nullptr;
+#endif
+
 extern "C" {
 
-__attribute__((visibility("default"))) __attribute__((used)) IPluginFactory* GetPluginFactory ()
+#if defined(_MSC_VER)
+__declspec(dllexport)
+#else
+__attribute__((visibility("default"))) __attribute__((used))
+#endif
+IPluginFactory* GetPluginFactory ()
 {
     if (!gPluginFactory)
     {
