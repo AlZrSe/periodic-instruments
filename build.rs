@@ -170,6 +170,10 @@ fn create_vst3_bundle(bundle_dir: &Path, out_dir: &Path) {
     let contents_dir = bundle_dir.join("Contents");
     fs::create_dir_all(&contents_dir).expect("Failed to create bundle directory");
 
+    // Create Resources directory (required for VST3 plugins)
+    let resources_dir = contents_dir.join("Resources");
+    fs::create_dir_all(&resources_dir).expect("Failed to create Resources directory");
+
     // Platform-specific binary directory
     let target_os = env::var("TARGET").unwrap_or_else(|_| env::var("HOST").unwrap_or_default());
     let platform_dir = if target_os.contains("linux") {
@@ -238,14 +242,21 @@ fn create_vst3_bundle(bundle_dir: &Path, out_dir: &Path) {
         eprintln!("DEBUG: moduleinfo.json NOT FOUND at {:?}", module_info_src);
     }
 
-    // Copy manifest.ttl
+    // Copy manifest.ttl to Contents/
     let manifest_src = Path::new("src/vst3/manifest.ttl");
     if manifest_src.exists() {
         fs::copy(manifest_src, contents_dir.join("manifest.ttl"))
             .expect("Failed to copy manifest.ttl");
-        eprintln!("DEBUG: Copied manifest.ttl to bundle");
+        eprintln!("DEBUG: Copied manifest.ttl to bundle Contents/");
     } else {
         eprintln!("DEBUG: manifest.ttl NOT FOUND at {:?}", manifest_src);
+    }
+
+    // Also copy manifest.ttl to bundle root (some hosts look there)
+    if manifest_src.exists() {
+        fs::copy(manifest_src, bundle_dir.join("manifest.ttl"))
+            .expect("Failed to copy manifest.ttl to bundle root");
+        eprintln!("DEBUG: Copied manifest.ttl to bundle root");
     }
 
     // Debug: list bundle contents
