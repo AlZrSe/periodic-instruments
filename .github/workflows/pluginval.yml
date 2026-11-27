@@ -38,9 +38,15 @@ jobs:
         shell: pwsh
         run: |
           Write-Host "Building VST3 plugin..."
-          cargo build --release --target x86_64-pc-windows-msvc 2>&1 | Tee-Object -Variable buildOutput
+          $buildOutput = cargo build --release --target x86_64-pc-windows-msvc 2>&1
+          $exitCode = $LASTEXITCODE
           Write-Host "Build output:" 
           $buildOutput
+          Write-Host "Cargo exit code: $exitCode"
+          if ($exitCode -ne 0) {
+            Write-Error "Cargo build failed with exit code $exitCode"
+            exit $exitCode
+          }
           # The bundle will be at target/x86_64-pc-windows-msvc/release/Periodic Instruments.vst3
           $bundlePath = "target/x86_64-pc-windows-msvc/release/Periodic Instruments.vst3"
           if (-not (Test-Path $bundlePath)) {
