@@ -20,8 +20,8 @@ vst:PeriodicInstrumentsProcessor
     vst:category "Audio Module Class" ;
     vst:subCategory "Instrument" ;
     vst:subCategory "Synth" ;
-    vst:numAudioInputs 2 ;
-    vst:numAudioOutputs 2 ;
+    vst:numAudioInputs 1 ;
+    vst:numAudioOutputs 1 ;
     vst:numEventInputs 1 ;
     vst:numEventOutputs 1 .
 
