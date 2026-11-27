@@ -52,6 +52,13 @@ jobs:
             exit 1
           }
           Write-Host "Built VST3 bundle at $bundlePath"
+          # Debug: check bundle contents
+          Write-Host "=== DEBUG: Check bundle structure ==="
+          Get-ChildItem "$bundlePath\Contents" -Force -Recurse -ErrorAction SilentlyContinue | Select-Object FullName
+          Write-Host "=== DEBUG: Check for manifest.ttl ==="
+          if (Test-Path "$bundlePath\Contents\manifest.ttl") { Write-Host "manifest.ttl FOUND" } else { Write-Host "manifest.ttl NOT FOUND" }
+          Write-Host "=== DEBUG: Check for moduleinfo.json ==="
+          if (Test-Path "$bundlePath\Contents\moduleinfo.json") { Write-Host "moduleinfo.json FOUND" } else { Write-Host "moduleinfo.json NOT FOUND" }
           # Copy to expected location for later steps
           $expectedPath = "${{ env.VST3_BUNDLE_PATH }}"
           if (-not (Test-Path (Split-Path $expectedPath -Parent))) {

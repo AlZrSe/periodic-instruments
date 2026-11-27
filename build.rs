@@ -233,6 +233,9 @@ fn create_vst3_bundle(bundle_dir: &Path, out_dir: &Path) {
     if module_info_src.exists() {
         fs::copy(module_info_src, contents_dir.join("moduleinfo.json"))
             .expect("Failed to copy moduleinfo.json");
+        eprintln!("DEBUG: Copied moduleinfo.json to bundle");
+    } else {
+        eprintln!("DEBUG: moduleinfo.json NOT FOUND at {:?}", module_info_src);
     }
 
     // Copy manifest.ttl
@@ -240,5 +243,18 @@ fn create_vst3_bundle(bundle_dir: &Path, out_dir: &Path) {
     if manifest_src.exists() {
         fs::copy(manifest_src, contents_dir.join("manifest.ttl"))
             .expect("Failed to copy manifest.ttl");
+        eprintln!("DEBUG: Copied manifest.ttl to bundle");
+    } else {
+        eprintln!("DEBUG: manifest.ttl NOT FOUND at {:?}", manifest_src);
+    }
+
+    // Debug: list bundle contents
+    eprintln!("DEBUG: Bundle contents:");
+    if let Ok(entries) = fs::read_dir(&contents_dir) {
+        for entry in entries {
+            if let Ok(entry) = entry {
+                eprintln!("  {}", entry.path().display());
+            }
+        }
     }
 }
