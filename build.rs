@@ -144,7 +144,7 @@ fn main() {
             .arg("-c")
             .arg(format!("nm -D --defined-only {} | grep -iE 'GetPluginFactory|ModuleEntry|ModuleExit|gPluginFactory'", so_path.display()))
             .status();
-    
+    }
 
     // Create VST3 bundle
     let target_dir = PathBuf::from(env::var("CARGO_TARGET_DIR").unwrap_or_else(|_| {
