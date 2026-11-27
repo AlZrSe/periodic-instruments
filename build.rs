@@ -58,7 +58,7 @@ fn main() {
 
     // Platform entry point
     if cfg!(target_os = "windows") {
-        build.file("src/vst3/entry_windows.cpp");
+        build.file(vst3_sdk.join("public.sdk").join("source").join("main").join("dllmain.cpp"));
     } else if cfg!(target_os = "linux") {
         build.file(vst3_sdk.join("public.sdk").join("source").join("main").join("linuxmain.cpp"));
         // On Linux, compile essential SDK files for VST3 factory
@@ -99,6 +99,7 @@ fn main() {
     build.file("src/vst3/periodic_instruments.cpp");
 
     if cfg!(target_os = "windows") {
+        build.shared_flag(true);
         build.compile("periodic_instruments");
     } else if cfg!(target_os = "linux") {
         build.compile("periodic_instruments");
@@ -143,39 +144,7 @@ fn main() {
             .arg("-c")
             .arg(format!("nm -D --defined-only {} | grep -iE 'GetPluginFactory|ModuleEntry|ModuleExit|gPluginFactory'", so_path.display()))
             .status();
-    } else if cfg!(target_os = "windows") {
-        // On Windows, link the static library into a DLL
-        use std::process::Command;
-        let dll_path = out_dir.join("periodic_instruments.dll");
-        // The cc crate creates a static library, we need to link it into a DLL
-        // First find the static library
-        let mut lib_path = None;
-        if let Ok(entries) = std::fs::read_dir(&out_dir) {
-            for entry in entries.flatten() {
-                let path = entry.path();
-                if path.extension().map_or(false, |e| e == "lib") {
-                    lib_path = Some(path);
-                    break;
-                }
-            }
-        }
-        if let Some(lib_path) = lib_path {
-            let mut cmd = Command::new("link.exe");
-            cmd.arg("/DLL")
-               .arg("/OUT:".to_string() + &dll_path.display().to_string())
-               .arg(&lib_path)
-               .arg("user32.lib")
-               .arg("kernel32.lib")
-               .arg("advapi32.lib");
-            let status = cmd.status().expect("Failed to link DLL");
-            if !status.success() {
-                panic!("Failed to link shared library (DLL)");
-            }
-            eprintln!("DEBUG: Created DLL at {}", dll_path.display());
-        } else {
-            eprintln!("WARNING: No static library found in OUT_DIR, cannot create DLL");
-        }
-    }
+    
 
     // Create VST3 bundle
     let target_dir = PathBuf::from(env::var("CARGO_TARGET_DIR").unwrap_or_else(|_| {

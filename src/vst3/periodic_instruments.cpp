@@ -183,29 +183,9 @@ IPluginFactory* GetPluginFactory ()
 }
 
 // Module entry/exit functions required by VST3
-#if defined(_MSC_VER)
-// Windows uses InitDll/ExitDll
-__declspec(dllexport)
-bool InitDll ()
-{
-    // Called when the module is loaded
-    return true;
-}
-
-__declspec(dllexport)
-bool ExitDll ()
-{
-    // Called when the module is unloaded
-    // Release the plugin factory
-    if (gPluginFactory)
-    {
-        gPluginFactory->release();
-        gPluginFactory = nullptr;
-    }
-    return true;
-}
-#else
-// Linux/macOS use InitModule/DeinitModule
+// On Windows, these are provided by the SDK's dllmain.cpp
+// On Linux/macOS, we need to export them
+#if !defined(_MSC_VER)
 __attribute__((visibility("default"))) __attribute__((used))
 bool InitModule ()
 {
