@@ -44,10 +44,7 @@ public:
     {
     }
 
-    tresult PLUGIN_API process (ProcessData& data) override
-    {
-        return kResultTrue;
-    }
+    // No process override - use AudioEffect default
 
     tresult PLUGIN_API setupProcessing (ProcessSetup& setup) override
     {
