@@ -61,12 +61,14 @@ fn main() {
     build.include(vst3_sdk.join("base"));
 
     // Platform entry point
+    // pluginfactory.cpp defines gPluginFactory - needed on ALL platforms
+    build.file(vst3_sdk.join("public.sdk").join("source").join("main").join("pluginfactory.cpp"));
+
     if cfg!(target_os = "windows") {
         build.file(vst3_sdk.join("public.sdk").join("source").join("main").join("dllmain.cpp"));
     } else if cfg!(target_os = "linux") {
         // On Linux, compile essential SDK files for VST3 factory
         // Note: linuxmain.cpp and moduleinit.cpp are NOT included - we provide our own ModuleEntry/ModuleExit/InitModule/DeinitModule
-        build.file(vst3_sdk.join("public.sdk").join("source").join("main").join("pluginfactory.cpp"));
         build.file(vst3_sdk.join("public.sdk").join("source").join("vst").join("hosting").join("processdata.cpp"));
         // Core VST3 implementation files needed for the plugin to work
         build.file(vst3_sdk.join("public.sdk").join("source").join("vst").join("vstcomponent.cpp"));
@@ -247,13 +249,6 @@ fn create_vst3_bundle(bundle_dir: &Path, out_dir: &Path, manifest_dir: &Path) {
         eprintln!("DEBUG: Copied manifest.ttl to bundle root");
     } else {
         eprintln!("DEBUG: manifest.ttl NOT FOUND at {:?}", manifest_src);
-    }
-
-    // Copy manifest.ttl to Contents/ (required by pluginval on Windows)
-    if manifest_src.exists() {
-        fs::copy(&manifest_src, contents_dir.join("manifest.ttl"))
-            .expect("Failed to copy manifest.ttl to bundle Contents/");
-        eprintln!("DEBUG: Copied manifest.ttl to bundle Contents/");
     }
 
     // Create Resources directory (required by VST3 spec)
