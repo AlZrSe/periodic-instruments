@@ -153,6 +153,7 @@ __attribute__((visibility("default"))) __attribute__((used))
 #endif
 IPluginFactory* GetPluginFactory ()
 {
+    // gPluginFactory is declared extern in pluginfactory.h
     if (!gPluginFactory)
     {
         static PFactoryInfo factoryInfo ("AlZrSe",
