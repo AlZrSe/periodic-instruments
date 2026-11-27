@@ -121,6 +121,7 @@ fn main() {
         cmd.arg("-shared")
            .arg("-fPIC")
            .arg("-Wl,--export-dynamic")
+           .arg("-Wl,--no-undefined")
            .arg("-o")
            .arg(&so_path);
         if let Ok(entries) = std::fs::read_dir(&out_dir) {

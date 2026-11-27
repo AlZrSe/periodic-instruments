@@ -92,6 +92,8 @@ jobs:
           # List all files in copied bundle
           Write-Host "=== DEBUG: Copied bundle structure ==="
           Get-ChildItem "$expectedPath\Contents" -Force -Recurse -ErrorAction SilentlyContinue | Select-Object FullName
+          Write-Host "=== DEBUG: DLL imports ==="
+          dumpbin /imports "$expectedPath\Contents\x86_64-win\Periodic Instruments.dll" 2>&1 | Select-String "DLL Name" -Context 0,5
           # Explicitly exit with success code (robocopy exit code 1 = success)
           exit 0
 
