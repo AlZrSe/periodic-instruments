@@ -6,6 +6,7 @@
 #include "public.sdk/source/main/pluginfactory.h"
 #include "pluginterfaces/vst/vstspeaker.h"
 #include "pluginterfaces/base/fplatform.h"
+#include <cstring>
 
 // Note: base/ustring.h intentionally omitted - it includes ftypes.h which includes
 // fstrdefs.h, which contains constexpr function definitions that cause redefinition
