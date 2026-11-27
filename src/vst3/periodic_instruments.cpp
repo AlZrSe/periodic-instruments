@@ -73,8 +73,6 @@ public:
 
     tresult PLUGIN_API setupProcessing (ProcessSetup& setup) override
     {
-        if (setup.symbolicSampleSize != kSample32)
-            return kResultFalse;
         return AudioEffect::setupProcessing (setup);
     }
 
