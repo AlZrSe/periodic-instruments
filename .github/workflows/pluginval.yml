@@ -64,8 +64,12 @@ jobs:
           if (-not (Test-Path (Split-Path $expectedPath -Parent))) {
             New-Item -ItemType Directory -Path (Split-Path $expectedPath -Parent) -Force
           }
-          Copy-Item $bundlePath $expectedPath -Force
+          Copy-Item $bundlePath $expectedPath -Force -Recurse
           Write-Host "Copied bundle to $expectedPath"
+          # Verify copy
+          Write-Host "=== DEBUG: Verify copied bundle ==="
+          if (Test-Path "$expectedPath\Contents\manifest.ttl") { Write-Host "manifest.ttl FOUND in copied bundle" } else { Write-Host "manifest.ttl NOT FOUND in copied bundle" }
+          if (Test-Path "$expectedPath\Contents\moduleinfo.json") { Write-Host "moduleinfo.json FOUND in copied bundle" } else { Write-Host "moduleinfo.json NOT FOUND in copied bundle" }
 
       - name: Download pluginval (Windows)
         id: download-pluginval-windows
