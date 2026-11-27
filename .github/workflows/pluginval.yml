@@ -44,14 +44,14 @@ jobs:
           Write-Host "Cargo exit code: $exitCode"
           
           if ($exitCode -ne 0) {
-            Write-Error "Cargo build failed with exit code $exitCode"
+            Write-Error ('Cargo build failed with exit code {0}' -f $exitCode)
             exit $exitCode
           }
           
           # The bundle will be at target/x86_64-pc-windows-msvc/release/Periodic Instruments.vst3
           $bundlePath = "target/x86_64-pc-windows-msvc/release/Periodic Instruments.vst3"
           if (-not (Test-Path $bundlePath)) {
-            Write-Error "VST3 bundle not found at $bundlePath after build"
+            Write-Error ('VST3 bundle not found at {0} after build' -f $bundlePath)
             Write-Host "Contents of target/x86_64-pc-windows-msvc/release:"
             Get-ChildItem "target/x86_64-pc-windows-msvc/release" -Force
             Write-Host "Contents of target:"
@@ -59,7 +59,7 @@ jobs:
             exit 1
           }
           
-          Write-Host "Built VST3 bundle at $bundlePath"
+          Write-Host ("Built VST3 bundle at {0}" -f $bundlePath)
           # Debug: check bundle contents
           Write-Host "=== DEBUG: Check bundle structure ==="
           Get-ChildItem "$bundlePath\Contents" -Force -Recurse -ErrorAction SilentlyContinue | Select-Object FullName
@@ -79,10 +79,10 @@ jobs:
           # Both are success cases for us
           $robocopyExitCode = $LASTEXITCODE
           if ($robocopyExitCode -gt 7) {
-            Write-Error "Robocopy failed with exit code $robocopyExitCode"
+            Write-Error ('Robocopy failed with exit code {0}' -f $robocopyExitCode)
             exit $robocopyExitCode
           }
-          Write-Host "Copied bundle to $expectedPath"
+          Write-Host ("Copied bundle to {0}" -f $expectedPath)
           # Verify copy
           Write-Host "=== DEBUG: Verify copied bundle ==="
           if (Test-Path "$expectedPath\Contents\manifest.ttl") { Write-Host "manifest.ttl FOUND in copied bundle" } else { Write-Host "manifest.ttl NOT FOUND in copied bundle" }
