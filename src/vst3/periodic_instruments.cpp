@@ -5,6 +5,7 @@
 #include "public.sdk/source/vst/vsteditcontroller.h"
 #include "public.sdk/source/main/pluginfactory.h"
 #include "pluginterfaces/vst/vstspeaker.h"
+#include "pluginterfaces/base/fplatform.h"
 
 // Note: base/ustring.h intentionally omitted - it includes ftypes.h which includes
 // fstrdefs.h, which contains constexpr function definitions that cause redefinition
@@ -149,9 +150,9 @@ extern "C" {
 #if defined(_MSC_VER)
 __declspec(dllexport)
 #else
-__attribute__((visibility("default"))) __attribute__((used))
+SMTG_EXPORT_SYMBOL
 #endif
-IPluginFactory* GetPluginFactory ()
+IPluginFactory* PLUGIN_API GetPluginFactory ()
 {
     // gPluginFactory is declared extern in pluginfactory.h
     if (!gPluginFactory)
@@ -212,7 +213,7 @@ bool DeinitModule ()
     return true;
 }
 
-__attribute__((visibility("default"))) __attribute__((used))
+SMTG_EXPORT_SYMBOL
 bool ModuleEntry (void* sharedLibraryHandle)
 {
     if (++moduleCounter == 1)
@@ -223,7 +224,7 @@ bool ModuleEntry (void* sharedLibraryHandle)
     return true;
 }
 
-__attribute__((visibility("default"))) __attribute__((used))
+SMTG_EXPORT_SYMBOL
 bool ModuleExit (void)
 {
     if (--moduleCounter == 0)
