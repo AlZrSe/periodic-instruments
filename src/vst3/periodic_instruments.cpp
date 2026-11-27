@@ -89,25 +89,6 @@ public:
     tresult PLUGIN_API setState (IBStream* state) override { return kResultTrue; }
     tresult PLUGIN_API getState (IBStream* state) override { return kResultTrue; }
 
-    // Bus arrangement methods required for VST3 validation
-    tresult PLUGIN_API getBusArrangement (BusDirection dir, int32 busIndex, SpeakerArrangement& arr) override
-    {
-        if (dir == kOutput && busIndex == 0)
-        {
-            arr = SpeakerArr::kStereo;
-            return kResultTrue;
-        }
-        return kResultFalse;
-    }
-
-    tresult PLUGIN_API setBusArrangements (SpeakerArrangement* inputs, int32 numIns, SpeakerArrangement* outputs, int32 numOuts) override
-    {
-        if (numIns == 0 && numOuts == 1 && outputs[0] == SpeakerArr::kStereo)
-        {
-            return AudioEffect::setBusArrangements (inputs, numIns, outputs, numOuts);
-        }
-        return kResultFalse;
-    }
 };
 
 //------------------------------------------------------------------------
