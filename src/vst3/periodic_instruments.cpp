@@ -144,10 +144,6 @@ public:
 static FUnknown* createProcessor (void*) { return (IAudioProcessor*)new PeriodicInstrumentsProcessor (); }
 static FUnknown* createController (void*) { return (IEditController*)new PeriodicInstrumentsController (); }
 
-#if defined(_MSC_VER)
-CPluginFactory* gPluginFactory = nullptr;
-#endif
-
 extern "C" {
 
 #if defined(_MSC_VER)
