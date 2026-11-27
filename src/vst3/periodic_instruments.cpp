@@ -47,14 +47,8 @@ public:
 
     tresult PLUGIN_API initialize (FUnknown* context) override
     {
-        // Call Component::initialize instead of AudioEffect::initialize
-        // to avoid AudioEffect adding a default audio input
-        tresult result = Component::initialize (context);
-        if (result == kResultTrue)
-        {
-            // Instrument/synth: no audio inputs, stereo output only
-            addAudioOutput (STR16 ("Audio Output"), SpeakerArr::kStereo);
-        }
+        // Use AudioEffect::initialize which adds default input and output
+        tresult result = AudioEffect::initialize (context);
         return result;
     }
 
