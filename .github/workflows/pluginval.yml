@@ -38,10 +38,8 @@ jobs:
         shell: pwsh
         run: |
           Write-Host "Building VST3 plugin..."
-          $buildOutput = cargo build --release --target x86_64-pc-windows-msvc 2>&1
-          $exitCode = $LASTEXITCODE
-          Write-Host "Build output:"
-          $buildOutput
+          $process = Start-Process -FilePath "cargo" -ArgumentList "build", "--release", "--target", "x86_64-pc-windows-msvc" -Wait -PassThru -NoNewWindow
+          $exitCode = $process.ExitCode
           Write-Host "Cargo exit code: $exitCode"
           
           if ($exitCode -ne 0) {
@@ -76,6 +74,13 @@ jobs:
           # Use Robocopy for reliable directory copy on Windows
           Write-Host "=== DEBUG: Copying bundle with robocopy ==="
           robocopy "$bundlePath" "$expectedPath" /E /R:0 /W:0
+          # Robocopy returns 0 for "no files copied", 1 for "files copied successfully"
+          # Both are success cases for us
+          $robocopyExitCode = $LASTEXITCODE
+          if ($robocopyExitCode -gt 7) {
+            Write-Error "Robocopy failed with exit code $robocopyExitCode"
+            exit $robocopyExitCode
+          }
           Write-Host "Copied bundle to $expectedPath"
           # Verify copy
           Write-Host "=== DEBUG: Verify copied bundle ==="
