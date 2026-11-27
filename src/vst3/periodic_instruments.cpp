@@ -3,24 +3,9 @@
 
 #include "public.sdk/source/vst/vstaudioeffect.h"
 #include "public.sdk/source/vst/vsteditcontroller.h"
+#include "public.sdk/source/main/pluginfactory.h"
 #include "pluginterfaces/vst/vstspeaker.h"
 #include "pluginterfaces/base/fplatform.h"
-
-// Forward declare CPluginFactory to allow gPluginFactory definition before pluginfactory.h include
-namespace Steinberg {
-    class CPluginFactory;
-}
-
-// Define and export gPluginFactory BEFORE including pluginfactory.h to avoid ambiguous symbol error
-// Must match SDK's declaration: CPluginFactory* in Steinberg namespace
-#if defined(_MSC_VER)
-__declspec(dllexport)
-#else
-SMTG_EXPORT_SYMBOL __attribute__((used))
-#endif
-Steinberg::CPluginFactory* Steinberg::gPluginFactory = nullptr;
-
-#include "public.sdk/source/main/pluginfactory.h"
 
 // Note: base/ustring.h intentionally omitted - it includes ftypes.h which includes
 // fstrdefs.h, which contains constexpr function definitions that cause redefinition
@@ -169,33 +154,35 @@ SMTG_EXPORT_SYMBOL __attribute__((used))
 #endif
 IPluginFactory* PLUGIN_API GetPluginFactory ()
 {
-    // gPluginFactory is declared extern in pluginfactory.h
-    if (!gPluginFactory)
+    // Use a local static factory to avoid global gPluginFactory symbol issues
+    // This avoids the ambiguous symbol conflict with SDK's pluginfactory.h
+    static CPluginFactory* factory = nullptr;
+    if (!factory)
     {
         static PFactoryInfo factoryInfo ("AlZrSe",
             "https://github.com/AlZrSe/periodic-instruments",
             "",
             Vst::kDefaultFactoryFlags);
-        gPluginFactory = new CPluginFactory (factoryInfo);
+        factory = new CPluginFactory (factoryInfo);
 
         static PClassInfo processorInfo (kProcessorUID,
             PClassInfo::kManyInstances,
             kVstAudioEffectClass,
             "Periodic Instruments");
-        gPluginFactory->registerClass (&processorInfo, createProcessor);
+        factory->registerClass (&processorInfo, createProcessor);
 
         static PClassInfo controllerInfo (kControllerUID,
             PClassInfo::kManyInstances,
             kVstComponentControllerClass,
             "Periodic Instruments Controller");
-        gPluginFactory->registerClass (&controllerInfo, createController);
+        factory->registerClass (&controllerInfo, createController);
     }
     else
     {
-        gPluginFactory->addRef ();
+        factory->addRef ();
     }
 
-    return gPluginFactory;
+    return factory;
 }
 
 // Module entry/exit functions required by VST3
