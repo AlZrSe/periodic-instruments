@@ -201,9 +201,10 @@ fn create_vst3_bundle(bundle_dir: &Path, out_dir: &Path) {
     for name in &possible_names {
         let src_lib = out_dir.join(name);
         if src_lib.exists() {
-            let dst_name = if cfg!(target_os = "windows") {
+            // Use target OS from TARGET env var, not cfg!
+            let dst_name = if target_os.contains("windows") {
                 "Periodic Instruments.dll"
-            } else if cfg!(target_os = "macos") {
+            } else if target_os.contains("macos") || target_os.contains("darwin") {
                 "Periodic Instruments.dylib"
             } else {
                 "Periodic Instruments.so"
