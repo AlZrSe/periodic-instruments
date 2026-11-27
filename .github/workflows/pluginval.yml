@@ -92,6 +92,8 @@ jobs:
           # List all files in copied bundle
           Write-Host "=== DEBUG: Copied bundle structure ==="
           Get-ChildItem "$expectedPath\Contents" -Force -Recurse -ErrorAction SilentlyContinue | Select-Object FullName
+          # Explicitly exit with success code (robocopy exit code 1 = success)
+          exit 0
 
       - name: Download pluginval (Windows)
         id: download-pluginval-windows
