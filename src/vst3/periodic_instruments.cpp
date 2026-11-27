@@ -184,10 +184,35 @@ IPluginFactory* GetPluginFactory ()
 
 // Module entry/exit functions required by VST3
 // On Windows, these are provided by the SDK's dllmain.cpp
-// On Linux/macOS, the SDK's linuxmain.cpp/macmain.cpp provide ModuleEntry/ModuleExit
-// which call InitModule/DeinitModule. We provide InitModule/DeinitModule as internal functions.
+// On Linux/macOS, we need to export ModuleEntry/ModuleExit explicitly
+// The SDK's linuxmain.cpp/macmain.cpp provide them but they may not be exported properly when linked
 #if !defined(_MSC_VER)
-// These are called by the SDK's ModuleEntry/ModuleExit, NOT exported directly
+
+static int moduleCounter = 0; // counting for ModuleEntry/ModuleExit pairs
+
+__attribute__((visibility("default"))) __attribute__((used))
+bool ModuleEntry (void* sharedLibraryHandle)
+{
+    if (++moduleCounter == 1)
+    {
+        return InitModule();
+    }
+    return true;
+}
+
+__attribute__((visibility("default"))) __attribute__((used))
+bool ModuleExit (void)
+{
+    if (--moduleCounter == 0)
+    {
+        return DeinitModule();
+    }
+    else if (moduleCounter < 0)
+        return false;
+    return true;
+}
+
+// Internal init/deinit functions
 bool InitModule ()
 {
     // Called when the module is loaded

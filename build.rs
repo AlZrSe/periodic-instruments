@@ -60,9 +60,8 @@ fn main() {
     if cfg!(target_os = "windows") {
         build.file(vst3_sdk.join("public.sdk").join("source").join("main").join("dllmain.cpp"));
     } else if cfg!(target_os = "linux") {
-        build.file(vst3_sdk.join("public.sdk").join("source").join("main").join("linuxmain.cpp"));
         // On Linux, compile essential SDK files for VST3 factory
-        build.file(vst3_sdk.join("public.sdk").join("source").join("main").join("moduleinit.cpp"));
+        // Note: linuxmain.cpp and moduleinit.cpp are NOT included - we provide our own ModuleEntry/ModuleExit/InitModule/DeinitModule
         build.file(vst3_sdk.join("public.sdk").join("source").join("main").join("pluginfactory.cpp"));
         build.file(vst3_sdk.join("public.sdk").join("source").join("vst").join("hosting").join("processdata.cpp"));
         // Core VST3 implementation files needed for the plugin to work
