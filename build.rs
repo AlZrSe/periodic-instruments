@@ -162,13 +162,13 @@ fn main() {
     let bundle_name = "Periodic Instruments.vst3";
     let bundle_dir = profile_dir.join(bundle_name);
 
-    create_vst3_bundle(&bundle_dir, &out_dir);
+    create_vst3_bundle(&bundle_dir, &out_dir, &manifest_dir);
 
     // The C++ VST3 plugin is built as a shared library in the bundle
     // No need to link into the Rust library
 }
 
-fn create_vst3_bundle(bundle_dir: &Path, out_dir: &Path) {
+fn create_vst3_bundle(bundle_dir: &Path, out_dir: &Path, manifest_dir: &Path) {
     use std::fs;
 
     let contents_dir = bundle_dir.join("Contents");
@@ -235,10 +235,6 @@ fn create_vst3_bundle(bundle_dir: &Path, out_dir: &Path) {
         }
         panic!("Compiled library not found in OUT_DIR");
     }
-
-    // Create Resources directory (required by VST3 spec)
-    let resources_dir = contents_dir.join("Resources");
-    fs::create_dir_all(&resources_dir).expect("Failed to create Resources directory");
 
     // Use absolute paths based on CARGO_MANIFEST_DIR
     let manifest_src = manifest_dir.join("src/vst3/manifest.ttl");
