@@ -38,8 +38,11 @@ jobs:
         shell: pwsh
         run: |
           Write-Host "Building VST3 plugin..."
-          $process = Start-Process -FilePath "cargo" -ArgumentList "build", "--release", "--target", "x86_64-pc-windows-msvc" -Wait -PassThru -NoNewWindow
-          $exitCode = $process.ExitCode
+          # Use direct cargo call with proper waiting
+          cargo build --release --target x86_64-pc-windows-msvc 2>&1 | Tee-Object -Variable buildOutput
+          $exitCode = $LASTEXITCODE
+          Write-Host "Build output:"
+          $buildOutput
           Write-Host "Cargo exit code: $exitCode"
           
           if ($exitCode -ne 0) {
@@ -229,6 +232,10 @@ jobs:
           echo "=== DEBUG: Check manifest.ttl ==="
           cat "$BUNDLE_PATH/Contents/manifest.ttl" 2>/dev/null || echo "manifest.ttl not found"
           echo ""
+          echo "=== DEBUG: Verify bundle structure for VST3 ==="
+          ls -la "$BUNDLE_PATH/Contents/"
+          ls -la "$BUNDLE_PATH/Contents/x86_64-linux/"
+          echo ""
           echo "=== DEBUG: Exported symbols ==="
           nm -D --defined-only "$BUNDLE_PATH/Contents/x86_64-linux/Periodic Instruments.so" 2>/dev/null | grep -iE 'GetPluginFactory|ModuleEntry|ModuleExit' || echo "VST3 symbols NOT FOUND"
           echo "=== DEBUG: All exported symbols ==="
@@ -304,6 +311,11 @@ jobs:
           BUNDLE="${{ env.VST3_BUNDLE_PATH }}"
           LOG_FILE="${{ runner.temp }}/pluginval-level5-linux.log"
           echo "Running pluginval Level 5 on $BUNDLE"
+          # First, let's see what pluginval finds in the bundle
+          echo "=== DEBUG: pluginval scan test ==="
+          xvfb-run -a "$PLUGINVAL" --strictness-level 5 --log-level debug --list-plugins "$BUNDLE" 2>&1 | tee -a "$LOG_FILE" || true
+          echo ""
+          echo "=== DEBUG: Full pluginval validation ==="
           xvfb-run -a "$PLUGINVAL" --strictness-level 5 --log-level debug "$BUNDLE" 2>&1 | tee "$LOG_FILE"
           EXIT_CODE=${PIPESTATUS[0]}
           echo "Exit code: $EXIT_CODE"
