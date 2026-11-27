@@ -240,29 +240,17 @@ fn create_vst3_bundle(bundle_dir: &Path, out_dir: &Path, manifest_dir: &Path) {
     let manifest_src = manifest_dir.join("src/vst3/manifest.ttl");
     let module_info_src = manifest_dir.join("src/vst3/moduleinfo.json");
 
-    // Copy manifest.ttl to bundle root (required by VST3 spec - scanner looks here first)
-    if manifest_src.exists() {
-        fs::copy(&manifest_src, bundle_dir.join("manifest.ttl"))
-            .expect("Failed to copy manifest.ttl to bundle root");
-        eprintln!("DEBUG: Copied manifest.ttl to bundle root");
-    } else {
-        eprintln!("DEBUG: manifest.ttl NOT FOUND at {:?}", manifest_src);
-    }
-
-    // Copy manifest.ttl to Contents/ (also needed by some VST3 scanners)
-    if manifest_src.exists() {
-        fs::copy(&manifest_src, contents_dir.join("manifest.ttl"))
-            .expect("Failed to copy manifest.ttl to bundle Contents/");
-        eprintln!("DEBUG: Copied manifest.ttl to bundle Contents/");
-    }
-
-    // Copy manifest.ttl to Contents/Resources/ (also required by VST3 spec)
+    // Create Resources directory (required by VST3 spec)
     let resources_dir = contents_dir.join("Resources");
     fs::create_dir_all(&resources_dir).expect("Failed to create Resources directory");
+
+    // Copy manifest.ttl to Contents/Resources/ (required by VST3 spec)
     if manifest_src.exists() {
         fs::copy(&manifest_src, resources_dir.join("manifest.ttl"))
             .expect("Failed to copy manifest.ttl to bundle Contents/Resources/");
         eprintln!("DEBUG: Copied manifest.ttl to bundle Contents/Resources/");
+    } else {
+        eprintln!("DEBUG: manifest.ttl NOT FOUND at {:?}", manifest_src);
     }
 
     // Copy moduleinfo.json to Contents/Resources/ for VST3 scanner
@@ -272,13 +260,6 @@ fn create_vst3_bundle(bundle_dir: &Path, out_dir: &Path, manifest_dir: &Path) {
         eprintln!("DEBUG: Copied moduleinfo.json to bundle Contents/Resources/");
     } else {
         eprintln!("DEBUG: moduleinfo.json NOT FOUND at {:?}", module_info_src);
-    }
-
-    // Also copy moduleinfo.json to Contents/ (some scanners look there)
-    if module_info_src.exists() {
-        fs::copy(&module_info_src, contents_dir.join("moduleinfo.json"))
-            .expect("Failed to copy moduleinfo.json to bundle Contents/");
-        eprintln!("DEBUG: Copied moduleinfo.json to bundle Contents/");
     }
 
     // Debug: list bundle contents
