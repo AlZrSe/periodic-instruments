@@ -266,6 +266,31 @@ bool ModuleExit (void)
         return false;
     return true;
 }
+#else
+// Windows - explicitly export ModuleEntry/ModuleExit as well (in case SDK's dllmain.cpp doesn't)
+extern "C" __declspec(dllexport)
+bool ModuleEntry (void* sharedLibraryHandle)
+{
+    if (++moduleCounter == 1)
+    {
+        moduleHandle = sharedLibraryHandle;
+        return InitModule();
+    }
+    return true;
+}
+
+extern "C" __declspec(dllexport)
+bool ModuleExit (void)
+{
+    if (--moduleCounter == 0)
+    {
+        moduleHandle = nullptr;
+        return DeinitModule();
+    }
+    else if (moduleCounter < 0)
+        return false;
+    return true;
+}
 #endif
 
 } // extern "C"
