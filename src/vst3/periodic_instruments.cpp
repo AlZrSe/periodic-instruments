@@ -49,7 +49,7 @@ public:
         tresult result = AudioEffect::initialize (context);
         if (result == kResultTrue)
         {
-            addAudioInput (STR16 ("Audio Input"), SpeakerArr::kStereo);
+            // Instrument/synth: no audio inputs, stereo output only
             addAudioOutput (STR16 ("Audio Output"), SpeakerArr::kStereo);
         }
         return result;
