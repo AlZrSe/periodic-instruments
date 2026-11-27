@@ -10,7 +10,7 @@ permissions:
   contents: read
 
 env:
-  PLUGINVAL_VERSION: "v1.0.4"
+  PLUGINVAL_VERSION: "v2.0.0-beta3"
   VST3_BUNDLE_NAME: "Periodic Instruments.vst3"
   VST3_BUNDLE_PATH: "target/release/Periodic Instruments.vst3"
 
@@ -156,7 +156,7 @@ jobs:
           $bundle = "${{ env.VST3_BUNDLE_PATH }}"
           $logFile = "${{ runner.temp }}/pluginval-level5-windows.log"
           Write-Host "Running pluginval Level 5 on $bundle"
-          & $pluginval --strictness-level 5 --log-level debug --validate "$bundle" 2>&1 | Tee-Object -FilePath $logFile
+          & $pluginval validate --strictness-level 5 --log-level debug "$bundle" 2>&1 | Tee-Object -FilePath $logFile
           $exitCode = $LASTEXITCODE
           Write-Host "Exit code: $exitCode"
           echo "LOG_FILE=$logFile" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
@@ -179,7 +179,7 @@ jobs:
           $bundle = "${{ env.VST3_BUNDLE_PATH }}"
           $logFile = "${{ runner.temp }}/pluginval-level7-windows.log"
           Write-Host "Running pluginval Level 7 on $bundle"
-          & $pluginval --strictness-level 7 --log-level debug --validate "$bundle" 2>&1 | Tee-Object -FilePath $logFile
+          & $pluginval validate --strictness-level 7 --log-level debug "$bundle" 2>&1 | Tee-Object -FilePath $logFile
           $exitCode = $LASTEXITCODE
           Write-Host "Exit code: $exitCode"
           echo "LOG_FILE=$logFile" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
@@ -315,10 +315,10 @@ jobs:
           echo "Running pluginval Level 5 on $BUNDLE"
           # First, let's see what pluginval finds in the bundle
           echo "=== DEBUG: pluginval scan test ==="
-          xvfb-run -a "$PLUGINVAL" --strictness-level 5 --log-level debug --list-plugins "$BUNDLE" 2>&1 | tee -a "$LOG_FILE" || true
+          xvfb-run -a "$PLUGINVAL" validate --strictness-level 5 --log-level debug --list-plugins "$BUNDLE" 2>&1 | tee -a "$LOG_FILE" || true
           echo ""
           echo "=== DEBUG: Full pluginval validation ==="
-          xvfb-run -a "$PLUGINVAL" --strictness-level 5 --log-level debug --validate "$BUNDLE" 2>&1 | tee "$LOG_FILE"
+          xvfb-run -a "$PLUGINVAL" validate --strictness-level 5 --log-level debug "$BUNDLE" 2>&1 | tee "$LOG_FILE"
           EXIT_CODE=${PIPESTATUS[0]}
           echo "Exit code: $EXIT_CODE"
           echo "LOG_FILE=$LOG_FILE" >> $GITHUB_ENV
@@ -340,7 +340,7 @@ jobs:
           BUNDLE="${{ env.VST3_BUNDLE_PATH }}"
           LOG_FILE="${{ runner.temp }}/pluginval-level7-linux.log"
           echo "Running pluginval Level 7 on $BUNDLE"
-          xvfb-run -a "$PLUGINVAL" --strictness-level 7 --log-level debug --validate "$BUNDLE" 2>&1 | tee "$LOG_FILE"
+          xvfb-run -a "$PLUGINVAL" validate --strictness-level 7 --log-level debug "$BUNDLE" 2>&1 | tee "$LOG_FILE"
           EXIT_CODE=${PIPESTATUS[0]}
           echo "Exit code: $EXIT_CODE"
           echo "LOG_FILE=$LOG_FILE" >> $GITHUB_ENV
