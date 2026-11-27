@@ -150,7 +150,7 @@ extern "C" {
 #if defined(_MSC_VER)
 __declspec(dllexport)
 #else
-SMTG_EXPORT_SYMBOL
+SMTG_EXPORT_SYMBOL __attribute__((used))
 #endif
 IPluginFactory* PLUGIN_API GetPluginFactory ()
 {
@@ -213,7 +213,7 @@ bool DeinitModule ()
     return true;
 }
 
-SMTG_EXPORT_SYMBOL
+SMTG_EXPORT_SYMBOL __attribute__((used))
 bool ModuleEntry (void* sharedLibraryHandle)
 {
     if (++moduleCounter == 1)
@@ -224,7 +224,7 @@ bool ModuleEntry (void* sharedLibraryHandle)
     return true;
 }
 
-SMTG_EXPORT_SYMBOL
+SMTG_EXPORT_SYMBOL __attribute__((used))
 bool ModuleExit (void)
 {
     if (--moduleCounter == 0)
