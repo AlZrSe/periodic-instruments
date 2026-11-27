@@ -149,12 +149,6 @@ bool InitModule ()
 bool DeinitModule ()
 {
     // Called when the module is unloaded
-    // Release the plugin factory
-    if (gPluginFactory)
-    {
-        gPluginFactory->release();
-        gPluginFactory = nullptr;
-    }
     return true;
 }
 
