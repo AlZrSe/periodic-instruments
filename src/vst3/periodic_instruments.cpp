@@ -184,10 +184,8 @@ IPluginFactory* PLUGIN_API GetPluginFactory ()
 }
 
 // Module entry/exit functions required by VST3
-// On Windows, these are provided by the SDK's dllmain.cpp
+// On Windows, these are provided by the SDK's dllmain.cpp but we also need to define InitModule/DeinitModule
 // On Linux/macOS, we need to export ModuleEntry/ModuleExit explicitly
-// The SDK's linuxmain.cpp/macmain.cpp provide them but they may not be exported properly when linked
-#if !defined(_MSC_VER)
 
 // Module handle - required by SDK (moduleinit.cpp, vstguieditor.cpp)
 void* moduleHandle = nullptr;
@@ -213,6 +211,8 @@ bool DeinitModule ()
     return true;
 }
 
+#if !defined(_MSC_VER)
+// Linux/macOS - export ModuleEntry/ModuleExit explicitly
 SMTG_EXPORT_SYMBOL __attribute__((used))
 bool ModuleEntry (void* sharedLibraryHandle)
 {

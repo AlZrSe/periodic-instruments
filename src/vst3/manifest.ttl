@@ -1,4 +1,4 @@
-@prefix vst: <http://www.steinberg.net/vst3#> .
+@prefix vst: <urn:steinberg:vst:> .
 @prefix doap: <http://usefulinc.com/ns/doap#> .
 @prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
 
@@ -9,7 +9,9 @@ vst:PeriodicInstruments
     doap:license <http://creativecommons.org/licenses/by/4.0/> ;
     vst:pluginCategory "Instrument|Synth" ;
     vst:hasController vst:PeriodicInstrumentsController ;
-    vst:hasAudioProcessor vst:PeriodicInstrumentsProcessor .
+    vst:hasAudioProcessor vst:PeriodicInstrumentsProcessor ;
+    vst:requiredHostContext vst:Module ;
+    vst:canReplacePrefix false .
 
 vst:PeriodicInstrumentsProcessor
     a vst:AudioProcessor ;
