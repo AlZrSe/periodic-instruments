@@ -111,29 +111,11 @@ fn main() {
     {
         use std::process::Command;
         let so_path = out_dir.join("libperiodic_instruments.so");
-        // Create a version script file
-        let version_script_path = out_dir.join("vst3.version");
-        let version_script = r#"
-VST3 {
-    global:
-        GetPluginFactory;
-        ModuleEntry;
-        ModuleExit;
-        InitModule;
-        DeinitModule;
-        gPluginFactory;
-        *InitModule*;
-        *DeinitModule*;
-    local:
-        *;
-};
-"#;
-        std::fs::write(&version_script_path, version_script).expect("Failed to write version script");
-        
+        // Collect all .o files
         let mut cmd = Command::new("g++");
         cmd.arg("-shared")
            .arg("-fPIC")
-           .arg("-Wl,--version-script=").arg(version_script_path.to_str().unwrap())
+           .arg("-Wl,--export-dynamic")
            .arg("-o")
            .arg(&so_path);
         if let Ok(entries) = std::fs::read_dir(&out_dir) {
