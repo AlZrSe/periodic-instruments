@@ -188,7 +188,26 @@ IPluginFactory* GetPluginFactory ()
 // The SDK's linuxmain.cpp/macmain.cpp provide them but they may not be exported properly when linked
 #if !defined(_MSC_VER)
 
+// Internal init/deinit functions (must be declared before use)
 static int moduleCounter = 0; // counting for ModuleEntry/ModuleExit pairs
+
+bool InitModule ()
+{
+    // Called when the module is loaded
+    return true;
+}
+
+bool DeinitModule ()
+{
+    // Called when the module is unloaded
+    // Release the plugin factory
+    if (gPluginFactory)
+    {
+        gPluginFactory->release();
+        gPluginFactory = nullptr;
+    }
+    return true;
+}
 
 __attribute__((visibility("default"))) __attribute__((used))
 bool ModuleEntry (void* sharedLibraryHandle)
@@ -209,25 +228,6 @@ bool ModuleExit (void)
     }
     else if (moduleCounter < 0)
         return false;
-    return true;
-}
-
-// Internal init/deinit functions
-bool InitModule ()
-{
-    // Called when the module is loaded
-    return true;
-}
-
-bool DeinitModule ()
-{
-    // Called when the module is unloaded
-    // Release the plugin factory
-    if (gPluginFactory)
-    {
-        gPluginFactory->release();
-        gPluginFactory = nullptr;
-    }
     return true;
 }
 #endif
