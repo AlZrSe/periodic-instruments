@@ -179,10 +179,21 @@ jobs:
         run: |
           echo "Building VST3 plugin..."
           cargo build --release 2>&1 | tee build.log
-          BUNDLE_PATH="${{ env.VST3_BUNDLE_PATH }}"
+          # Determine the actual bundle path (may be in target/<target>/release/ or target/release/)
+          BUNDLE_PATH="target/release/Periodic Instruments.vst3"
           if [ ! -d "$BUNDLE_PATH" ]; then
-            echo "VST3 bundle not found at $BUNDLE_PATH after build"
-            ls -la target/release/
+            # Check for cross-compilation target directory
+            TARGET=$(rustc -vV | grep host | cut -d' ' -f2)
+            if [ -d "target/$TARGET/release/Periodic Instruments.vst3" ]; then
+              BUNDLE_PATH="target/$TARGET/release/Periodic Instruments.vst3"
+            else
+              # Find any .vst3 bundle
+              BUNDLE_PATH=$(find target -name "Periodic Instruments.vst3" -type d 2>/dev/null | head -1)
+            fi
+          fi
+          if [ ! -d "$BUNDLE_PATH" ]; then
+            echo "VST3 bundle not found after build"
+            find target -name "Periodic Instruments.vst3" -type d 2>/dev/null
             exit 1
           fi
           echo "Built VST3 bundle at $BUNDLE_PATH"
