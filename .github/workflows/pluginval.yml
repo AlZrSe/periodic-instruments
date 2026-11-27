@@ -196,6 +196,8 @@ jobs:
           nm -D --defined-only "$BUNDLE_PATH/Contents/x86_64-linux/Periodic Instruments.so" 2>/dev/null | head -50
           echo "=== DEBUG: Check for gPluginFactory ==="
           nm -D --defined-only "$BUNDLE_PATH/Contents/x86_64-linux/Periodic Instruments.so" 2>/dev/null | grep -i "gPluginFactory" || echo "gPluginFactory NOT FOUND"
+          echo "=== DEBUG: build.rs output ==="
+          grep -i "debug\|exported\|VST3 symbols" build.log 2>/dev/null || echo "No debug output in build.log"
           echo "Built VST3 bundle at $BUNDLE_PATH"
       - name: Download pluginval (Linux)
         id: download-pluginval-linux
