@@ -110,11 +110,6 @@ public:
         }
         return kResultFalse;
     }
-
-    tresult PLUGIN_API canDoSampleRate (SampleRate sampleRate) override
-    {
-        return (sampleRate >= 44100 && sampleRate <= 192000) ? kResultTrue : kResultFalse;
-    }
 };
 
 //------------------------------------------------------------------------
