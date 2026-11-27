@@ -188,8 +188,12 @@ jobs:
           echo "Built VST3 bundle at $BUNDLE_PATH"
           echo "=== DEBUG: Check .so file in OUT_DIR ==="
           find target/release/build -name "*.so" -type f 2>/dev/null | head -20
+          echo "=== DEBUG: Check bundle structure ==="
+          find "$BUNDLE_PATH" -type f 2>/dev/null | sort
           echo "=== DEBUG: Check bundle .so file ==="
           ls -la "$BUNDLE_PATH/Contents/x86_64-linux/" 2>/dev/null || echo "Bundle directory not found"
+          echo "=== DEBUG: Check moduleinfo.json ==="
+          cat "$BUNDLE_PATH/Contents/moduleinfo.json" 2>/dev/null || echo "moduleinfo.json not found"
           echo "=== DEBUG: Exported symbols ==="
           nm -D --defined-only "$BUNDLE_PATH/Contents/x86_64-linux/Periodic Instruments.so" 2>/dev/null | grep -iE 'GetPluginFactory|ModuleEntry|ModuleExit' || echo "VST3 symbols NOT FOUND"
           echo "=== DEBUG: All exported symbols ==="
