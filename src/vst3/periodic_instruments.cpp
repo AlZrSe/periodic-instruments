@@ -40,9 +40,8 @@ static const FUID kControllerUID (0x69726570, 0x6369646f, 0x74736e49, 0x00437272
 class PeriodicInstrumentsProcessor : public AudioEffect
 {
 public:
-    PeriodicInstrumentsProcessor () : AudioEffect ()
+    PeriodicInstrumentsProcessor () : AudioEffect (0, 1)
     {
-        // No controller for now to test loading
     }
 
     tresult PLUGIN_API initialize (FUnknown* context) override
