@@ -87,12 +87,18 @@ fn main() {
         build.file(vst3_sdk.join("base").join("coreiids.cpp"));
         build.file(vst3_sdk.join("base").join("ustring.cpp"));
         build.file(vst3_sdk.join("base").join("conststringtable.cpp"));
+    // Base interface IDs
+    build.file(vst3_sdk.join("base").join("source").join("baseiids.cpp"));
+    // Additional base SDK files for VST3 compatibility
+    build.file(vst3_sdk.join("base").join("source").join("updatehandler.cpp"));
         build.file(vst3_sdk.join("base").join("source").join("fobject.cpp"));
         build.file(vst3_sdk.join("base").join("source").join("fstring.cpp"));
         build.file(vst3_sdk.join("base").join("source").join("fbuffer.cpp"));
         build.file(vst3_sdk.join("base").join("source").join("fstreamer.cpp"));
         build.file(vst3_sdk.join("base").join("thread").join("source").join("flock.cpp"));
         build.file(vst3_sdk.join("base").join("thread").join("source").join("fcondition.cpp"));
+    // Timer support for plugin factory
+    build.file(vst3_sdk.join("base").join("source").join("timer.cpp"));
     } else if cfg!(target_os = "macos") {
         build.file(vst3_sdk.join("public.sdk").join("source").join("main").join("macmain.cpp"));
         // On macOS, compile essential SDK files
