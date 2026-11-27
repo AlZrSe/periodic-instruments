@@ -234,4 +234,11 @@ fn create_vst3_bundle(bundle_dir: &Path, out_dir: &Path) {
         fs::copy(module_info_src, contents_dir.join("moduleinfo.json"))
             .expect("Failed to copy moduleinfo.json");
     }
+
+    // Copy manifest.ttl
+    let manifest_src = Path::new("src/vst3/manifest.ttl");
+    if manifest_src.exists() {
+        fs::copy(manifest_src, contents_dir.join("manifest.ttl"))
+            .expect("Failed to copy manifest.ttl");
+    }
 }

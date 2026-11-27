@@ -179,18 +179,8 @@ jobs:
         run: |
           echo "Building VST3 plugin..."
           cargo build --release 2>&1 | tee build.log
-          # Determine the actual bundle path (may be in target/<target>/release/ or target/release/)
-          BUNDLE_PATH="target/release/Periodic Instruments.vst3"
-          if [ ! -d "$BUNDLE_PATH" ]; then
-            # Check for cross-compilation target directory
-            TARGET=$(rustc -vV | grep host | cut -d' ' -f2)
-            if [ -d "target/$TARGET/release/Periodic Instruments.vst3" ]; then
-              BUNDLE_PATH="target/$TARGET/release/Periodic Instruments.vst3"
-            else
-              # Find any .vst3 bundle
-              BUNDLE_PATH=$(find target -name "Periodic Instruments.vst3" -type d 2>/dev/null | head -1)
-            fi
-          fi
+          # Find the bundle - it may be in target/<target>/release/ for cross-compilation
+          BUNDLE_PATH=$(find target -name "Periodic Instruments.vst3" -type d 2>/dev/null | head -1)
           if [ ! -d "$BUNDLE_PATH" ]; then
             echo "VST3 bundle not found after build"
             find target -name "Periodic Instruments.vst3" -type d 2>/dev/null
@@ -205,6 +195,8 @@ jobs:
           ls -la "$BUNDLE_PATH/Contents/x86_64-linux/" 2>/dev/null || echo "Bundle directory not found"
           echo "=== DEBUG: Check moduleinfo.json ==="
           cat "$BUNDLE_PATH/Contents/moduleinfo.json" 2>/dev/null || echo "moduleinfo.json not found"
+          echo "=== DEBUG: Check manifest.ttl ==="
+          cat "$BUNDLE_PATH/Contents/manifest.ttl" 2>/dev/null || echo "manifest.ttl not found"
           echo "=== DEBUG: Exported symbols ==="
           nm -D --defined-only "$BUNDLE_PATH/Contents/x86_64-linux/Periodic Instruments.so" 2>/dev/null | grep -iE 'GetPluginFactory|ModuleEntry|ModuleExit' || echo "VST3 symbols NOT FOUND"
           echo "=== DEBUG: All exported symbols ==="
@@ -213,6 +205,13 @@ jobs:
           nm -D --defined-only "$BUNDLE_PATH/Contents/x86_64-linux/Periodic Instruments.so" 2>/dev/null | grep -i "gPluginFactory" || echo "gPluginFactory NOT FOUND"
           echo "=== DEBUG: build.rs output ==="
           grep -i "debug\|exported\|VST3 symbols" build.log 2>/dev/null || echo "No debug output in build.log"
+          # Copy bundle to expected location for later steps
+          EXPECTED_PATH="target/release/Periodic Instruments.vst3"
+          if [ "$BUNDLE_PATH" != "$EXPECTED_PATH" ]; then
+            mkdir -p "$(dirname "$EXPECTED_PATH")"
+            cp -r "$BUNDLE_PATH" "$EXPECTED_PATH"
+            echo "Copied bundle to $EXPECTED_PATH"
+          fi
           echo "Built VST3 bundle at $BUNDLE_PATH"
       - name: Download pluginval (Linux)
         id: download-pluginval-linux
