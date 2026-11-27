@@ -1,29 +1,35 @@
 {
-  "name": "Periodic Instruments",
-  "vendor": "AlZrSe",
-  "version": "0.1.0",
-  "cids": [
+  "Name": "Periodic Instruments",
+  "Version": "0.1.0.0",
+  "BuildNumber": "0",
+  "Factory Info": {
+    "Vendor": "AlZrSe",
+    "URL": "https://github.com/AlZrSe/periodic-instruments",
+    "Email": "",
+    "Flags": 1
+  },
+  "Classes": [
     {
-      "cid": "706572696f646963496e737472756d00",
-      "name": "Periodic Instruments",
-      "category": "Audio Module Class",
-      "subcategories": ["Instrument", "Synth"],
-      "vendor": "AlZrSe",
-      "version": "0.1.0",
-      "sdkVersion": "VST 3.8.1",
-      "flags": 0,
-      "classType": "audio"
+      "CID": "{70657269-6F64-6963-496E-737472756D00}",
+      "Category": "Audio Module Class",
+      "Name": "Periodic Instruments",
+      "Vendor": "AlZrSe",
+      "Version": "0.1.0.0",
+      "SDKVersion": "VST 3.8.1",
+      "ClassFlags": 1,
+      "Sub Categories": "Instrument|Synth",
+      "Snapshots": []
     },
     {
-      "cid": "706572696f646963496e737472430000",
-      "name": "Periodic Instruments Controller",
-      "category": "Component Controller Class",
-      "subcategories": [],
-      "vendor": "AlZrSe",
-      "version": "0.1.0",
-      "sdkVersion": "VST 3.8.1",
-      "flags": 0,
-      "classType": "controller"
+      "CID": "{70657269-6F64-6963-496E-737472430000}",
+      "Category": "Component Controller Class",
+      "Name": "Periodic Instruments Controller",
+      "Vendor": "AlZrSe",
+      "Version": "0.1.0.0",
+      "SDKVersion": "VST 3.8.1",
+      "ClassFlags": 1,
+      "Sub Categories": "",
+      "Snapshots": []
     }
   ]
 }
