@@ -145,6 +145,15 @@ public:
 static FUnknown* createProcessor (void*) { return (IAudioProcessor*)new PeriodicInstrumentsProcessor (); }
 static FUnknown* createController (void*) { return (IEditController*)new PeriodicInstrumentsController (); }
 
+// Explicitly define and export gPluginFactory to ensure it's visible in the shared library
+// This overrides the SDK's definition which may not be exported
+#if defined(_MSC_VER)
+__declspec(dllexport)
+#else
+SMTG_EXPORT_SYMBOL __attribute__((used))
+#endif
+Steinberg::IPluginFactory* gPluginFactory = nullptr;
+
 extern "C" {
 
 #if defined(_MSC_VER)
