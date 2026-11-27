@@ -218,7 +218,10 @@ IPluginFactory* PLUGIN_API GetPluginFactory ()
 // On Linux/macOS, we need to export ModuleEntry/ModuleExit explicitly
 
 // Module handle - required by SDK (moduleinit.cpp, vstguieditor.cpp)
+// On Windows, this is defined in dllmain.cpp. On Linux/macOS, we define it here.
+#if !defined(_MSC_VER)
 void* moduleHandle = nullptr;
+#endif
 
 // Internal init/deinit functions (must be declared before use)
 static int moduleCounter = 0; // counting for ModuleEntry/ModuleExit pairs
