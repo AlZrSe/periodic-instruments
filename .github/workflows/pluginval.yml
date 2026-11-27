@@ -137,7 +137,7 @@ jobs:
           $bundle = "${{ env.VST3_BUNDLE_PATH }}"
           $logFile = "${{ runner.temp }}/pluginval-level5-windows.log"
           Write-Host "Running pluginval Level 5 on $bundle"
-          & $pluginval --strictness-level 5 "$bundle" 2>&1 | Tee-Object -FilePath $logFile
+          & $pluginval --strictness-level 5 --log-level debug "$bundle" 2>&1 | Tee-Object -FilePath $logFile
           $exitCode = $LASTEXITCODE
           Write-Host "Exit code: $exitCode"
           echo "LOG_FILE=$logFile" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
@@ -160,7 +160,7 @@ jobs:
           $bundle = "${{ env.VST3_BUNDLE_PATH }}"
           $logFile = "${{ runner.temp }}/pluginval-level7-windows.log"
           Write-Host "Running pluginval Level 7 on $bundle"
-          & $pluginval --strictness-level 7 "$bundle" 2>&1 | Tee-Object -FilePath $logFile
+          & $pluginval --strictness-level 7 --log-level debug "$bundle" 2>&1 | Tee-Object -FilePath $logFile
           $exitCode = $LASTEXITCODE
           Write-Host "Exit code: $exitCode"
           echo "LOG_FILE=$logFile" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
@@ -211,8 +211,10 @@ jobs:
           ls -la "$BUNDLE_PATH/Contents/x86_64-linux/" 2>/dev/null || echo "Bundle directory not found"
           echo "=== DEBUG: Check moduleinfo.json ==="
           cat "$BUNDLE_PATH/Contents/moduleinfo.json" 2>/dev/null || echo "moduleinfo.json not found"
+          echo ""
           echo "=== DEBUG: Check manifest.ttl ==="
           cat "$BUNDLE_PATH/Contents/manifest.ttl" 2>/dev/null || echo "manifest.ttl not found"
+          echo ""
           echo "=== DEBUG: Exported symbols ==="
           nm -D --defined-only "$BUNDLE_PATH/Contents/x86_64-linux/Periodic Instruments.so" 2>/dev/null | grep -iE 'GetPluginFactory|ModuleEntry|ModuleExit' || echo "VST3 symbols NOT FOUND"
           echo "=== DEBUG: All exported symbols ==="
@@ -288,7 +290,7 @@ jobs:
           BUNDLE="${{ env.VST3_BUNDLE_PATH }}"
           LOG_FILE="${{ runner.temp }}/pluginval-level5-linux.log"
           echo "Running pluginval Level 5 on $BUNDLE"
-          xvfb-run -a "$PLUGINVAL" --strictness-level 5 "$BUNDLE" 2>&1 | tee "$LOG_FILE"
+          xvfb-run -a "$PLUGINVAL" --strictness-level 5 --log-level debug "$BUNDLE" 2>&1 | tee "$LOG_FILE"
           EXIT_CODE=${PIPESTATUS[0]}
           echo "Exit code: $EXIT_CODE"
           echo "LOG_FILE=$LOG_FILE" >> $GITHUB_ENV
@@ -310,7 +312,7 @@ jobs:
           BUNDLE="${{ env.VST3_BUNDLE_PATH }}"
           LOG_FILE="${{ runner.temp }}/pluginval-level7-linux.log"
           echo "Running pluginval Level 7 on $BUNDLE"
-          xvfb-run -a "$PLUGINVAL" --strictness-level 7 "$BUNDLE" 2>&1 | tee "$LOG_FILE"
+          xvfb-run -a "$PLUGINVAL" --strictness-level 7 --log-level debug "$BUNDLE" 2>&1 | tee "$LOG_FILE"
           EXIT_CODE=${PIPESTATUS[0]}
           echo "Exit code: $EXIT_CODE"
           echo "LOG_FILE=$LOG_FILE" >> $GITHUB_ENV
