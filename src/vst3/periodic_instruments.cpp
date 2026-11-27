@@ -3,9 +3,19 @@
 
 #include "public.sdk/source/vst/vstaudioeffect.h"
 #include "public.sdk/source/vst/vsteditcontroller.h"
-#include "public.sdk/source/main/pluginfactory.h"
 #include "pluginterfaces/vst/vstspeaker.h"
 #include "pluginterfaces/base/fplatform.h"
+
+// Define and export gPluginFactory BEFORE including pluginfactory.h to avoid ambiguous symbol error
+// Must match SDK's declaration: CPluginFactory* in Steinberg namespace
+#if defined(_MSC_VER)
+__declspec(dllexport)
+#else
+SMTG_EXPORT_SYMBOL __attribute__((used))
+#endif
+Steinberg::CPluginFactory* Steinberg::gPluginFactory = nullptr;
+
+#include "public.sdk/source/main/pluginfactory.h"
 
 // Note: base/ustring.h intentionally omitted - it includes ftypes.h which includes
 // fstrdefs.h, which contains constexpr function definitions that cause redefinition
