@@ -188,6 +188,9 @@ IPluginFactory* GetPluginFactory ()
 // The SDK's linuxmain.cpp/macmain.cpp provide them but they may not be exported properly when linked
 #if !defined(_MSC_VER)
 
+// Module handle - required by SDK (moduleinit.cpp, vstguieditor.cpp)
+void* moduleHandle = nullptr;
+
 // Internal init/deinit functions (must be declared before use)
 static int moduleCounter = 0; // counting for ModuleEntry/ModuleExit pairs
 
@@ -214,6 +217,7 @@ bool ModuleEntry (void* sharedLibraryHandle)
 {
     if (++moduleCounter == 1)
     {
+        moduleHandle = sharedLibraryHandle;
         return InitModule();
     }
     return true;
@@ -224,6 +228,7 @@ bool ModuleExit (void)
 {
     if (--moduleCounter == 0)
     {
+        moduleHandle = nullptr;
         return DeinitModule();
     }
     else if (moduleCounter < 0)
