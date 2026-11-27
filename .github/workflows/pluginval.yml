@@ -38,9 +38,11 @@ jobs:
         shell: pwsh
         run: |
           Write-Host "Building VST3 plugin..."
-          # Use direct cargo call with proper waiting
-          $process = Start-Process -FilePath "cargo" -ArgumentList "build", "--release", "--target", "x86_64-pc-windows-msvc" -Wait -PassThru -NoNewWindow
-          $exitCode = $process.ExitCode
+          # Use direct cargo call with proper waiting - avoid Start-Process which can have exit code issues
+          cargo build --release --target x86_64-pc-windows-msvc 2>&1 | Tee-Object -Variable buildOutput
+          $exitCode = $LASTEXITCODE
+          Write-Host "Build output:"
+          $buildOutput
           Write-Host "Cargo exit code: $exitCode"
           
           if ($exitCode -ne 0) {
