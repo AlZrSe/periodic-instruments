@@ -13,7 +13,7 @@
   },
   "Classes": [
     {
-      "CID": "{70657269-6F64-6963-496E-737472756D00}",
+      "CID": "706572696f646963496e737472756d00",
       "Category": "Audio Module Class",
       "Name": "Periodic Instruments",
       "Vendor": "AlZrSe",
@@ -25,7 +25,7 @@
       "Snapshots": []
     },
     {
-      "CID": "{70657269-6F64-6963-496E-737472430000}",
+      "CID": "706572696f646963496e737472430000",
       "Category": "Component Controller Class",
       "Name": "Periodic Instruments Controller",
       "Vendor": "AlZrSe",
