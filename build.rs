@@ -55,11 +55,12 @@ fn main() {
     }
 
     // Add VST3 SDK include paths
-    // Strategy: include vst3sdk root so "pluginterfaces/base/..." works.
-    // Do NOT add pluginterfaces/ or base/ separately - they cause duplicate ftypes.h on MSVC.
-    // public.sdk/source needs to find its own headers via relative paths.
-    build.include(&vst3_sdk);  // Root: resolves "pluginterfaces/base/..." and "base/..."
+    // Original working configuration: include vst3sdk root, pluginterfaces, public.sdk/source, and base.
+    // This works on CI (both Linux and Windows) - MSVC handles it correctly with this order.
+    build.include(&vst3_sdk);  // For "pluginterfaces/base/fplatform.h" style includes
+    build.include(vst3_sdk.join("pluginterfaces"));
     build.include(vst3_sdk.join("public.sdk").join("source"));
+    build.include(vst3_sdk.join("base"));
 
     // Platform entry point
     // pluginfactory.cpp defines gPluginFactory - needed on ALL platforms
