@@ -1,0 +1,202 @@
+# CI Workflow for Periodic Instruments
+# Runs on every push and PR to main
+# Includes: build, headless plugin host tests, clippy, fmt
+
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+env:
+  CARGO_TERM_COLOR: always
+  RUST_BACKTRACE: 1
+
+jobs:
+  build-and-test:
+    name: Build & Headless Tests (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, ubuntu-latest]
+        include:
+          - os: windows-latest
+            artifact_name: test-results-windows
+            log_artifact: headless-host-logs-windows
+          - os: ubuntu-latest
+            artifact_name: test-results-linux
+            log_artifact: headless-host-logs-linux
+
+    steps:
+      # --- Checkout ---
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # --- Setup Rust ---
+      - name: Setup Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          target: ${{ matrix.os == 'windows-latest' && 'x86_64-pc-windows-msvc' || 'x86_64-unknown-linux-gnu' }}
+
+      # --- Cache Cargo ---
+      - name: Cache Cargo registry
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-
+
+      # --- System Dependencies (Linux) ---
+      - name: Install Linux dependencies
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libasound2-dev \
+            libudev-dev \
+            libdbus-1-dev \
+            libxcb1-dev \
+            libx11-xcb-dev \
+            libwayland-dev \
+            libxkbcommon-dev \
+            pkg-config \
+            clang \
+            lld
+
+      # --- System Dependencies (Windows) ---
+      - name: Setup MSVC environment
+        if: matrix.os == 'windows-latest'
+        uses: ilammy/msvc-dev-cmd@v1
+
+      # --- Build Release ---
+      - name: Build release
+        run: cargo build --release --locked
+        env:
+          RUSTFLAGS: -C target-cpu=native
+
+      # --- Verify VST3 Bundle ---
+      - name: Verify VST3 bundle exists
+        run: |
+          if [ "${{ matrix.os }}" = "windows-latest" ]; then
+            ls -la "target/release/Periodic Instruments.vst3/Contents/x86_64-win/Periodic Instruments.dll"
+          else
+            ls -la "target/release/Periodic Instruments.vst3/Contents/x86_64-linux/libPeriodicInstruments.so"
+          fi
+
+      # --- Run Headless Plugin Host Tests ---
+      - name: Run headless plugin host tests
+        id: headless_test
+        continue-on-error: true
+        run: |
+          cargo test --features headless --test headless_host -- \
+            --test-threads=1 \
+            --nocapture
+        timeout-minutes: 5
+        env:
+          RUST_TEST_THREADS: 1
+
+      # --- Upload JUnit XML (always) ---
+      - name: Upload JUnit XML results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact_name }}
+          path: test-results*.xml
+          retention-days: 30
+
+      # --- Upload logs on failure ---
+      - name: Upload failure logs
+        if: failure() && steps.headless_test.outcome == 'failure'
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.log_artifact }}
+          path: |
+            *.log
+            *.dmp
+            core.*
+          retention-days: 30
+
+      # --- Fail job if headless tests failed ---
+      - name: Check headless test result
+        if: steps.headless_test.outcome == 'failure'
+        run: |
+          echo "Headless plugin host tests failed!"
+          exit 1
+
+  # --- Code Quality Checks ---
+  clippy:
+    name: Clippy
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ubuntu-cargo-clippy-${{ hashFiles('**/Cargo.lock') }}
+      - name: Run clippy
+        run: cargo clippy --all-targets --all-features -- -D warnings
+
+  fmt:
+    name: Rustfmt
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt
+      - name: Check formatting
+        run: cargo fmt --all --check
+
+  # --- Dependency Audit ---
+  audit:
+    name: Cargo Audit
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ubuntu-cargo-audit-${{ hashFiles('**/Cargo.lock') }}
+      - name: Install cargo-audit
+        run: cargo install cargo-audit --locked
+      - name: Run security audit
+        run: cargo audit
+
+  # --- Summary ---
+  summary:
+    name: CI Summary
+    runs-on: ubuntu-latest
+    needs: [build-and-test, clippy, fmt, audit]
+    if: always()
+    steps:
+      - name: Check all jobs passed
+        run: |
+          if [ "${{ needs.build-and-test.result }}" != "success" ] || \
+             [ "${{ needs.clippy.result }}" != "success" ] || \
+             [ "${{ needs.fmt.result }}" != "success" ] || \
+             [ "${{ needs.audit.result }}" != "success" ]; then
+            echo "Some CI jobs failed"
+            exit 1
+          fi
+          echo "All CI checks passed!"

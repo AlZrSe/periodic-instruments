@@ -98,6 +98,54 @@ cargo build --release
 
 Built plugins are output to `target/release/`.
 
+### Testing
+
+#### Headless Plugin Host Tests (CI Smoke Tests)
+
+Fast VST3 plugin validation (< 2 min) using `vst3-host` with process isolation:
+
+```bash
+# Build and run all headless tests
+./scripts/test-headless.sh
+
+# Or with just
+just test-headless
+
+# Custom plugin path and JUnit output
+./scripts/test-headless.sh /path/to/plugin.vst3 --junit-output results.xml
+```
+
+On Windows:
+```cmd
+scripts\test-headless.bat
+```
+
+Tests cover:
+- Plugin discovery and instantiation
+- Audio processing at block sizes 64–4096, sample rates 44.1–192 kHz
+- Output validation (silence, NaN/Inf, denormals)
+- Parameter enumeration, get/set, automation
+- State save/restore (preset chunks)
+- MIDI event handling (Note On/Off, CC, Pitch Bend)
+- Editor/view creation (headless)
+- Process isolation and crash safety
+
+Outputs JUnit XML (`test-results-local.xml`) and human-readable summary.
+
+#### Unit Tests
+
+```bash
+cargo test --all-features
+```
+
+#### Code Quality
+
+```bash
+just clippy   # Linting
+just fmt      # Format check
+just audit    # Security audit
+```
+
 ### Project Layout
 
 ```
