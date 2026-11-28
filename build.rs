@@ -55,9 +55,8 @@ fn main() {
     }
 
     // Add VST3 SDK include paths
-    // Note: vst3_sdk and pluginterfaces both provide ftypes.h causing redefinitions on MSVC.
-    // Use base/ for source files, public.sdk/source/ for VST3 implementation.
-    build.include(&vst3_sdk);  // For "pluginterfaces/base/fplatform.h" style includes (via symlink/duplication)
+    // Note: vst3_sdk root includes both base/ and pluginterfaces/ which have duplicate ftypes.h.
+    // Include only what we need: public.sdk/source for VST3 impl, base/ for base implementation.
     build.include(vst3_sdk.join("public.sdk").join("source"));
     build.include(vst3_sdk.join("base"));
 
