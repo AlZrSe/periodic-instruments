@@ -55,10 +55,11 @@ fn main() {
     }
 
     // Add VST3 SDK include paths
-    // Note: vst3_sdk root includes both base/ and pluginterfaces/ which have duplicate ftypes.h.
-    // Include only what we need: public.sdk/source for VST3 impl, base/ for base implementation.
-    build.include(vst3_sdk.join("public.sdk").join("source"));
+    // Note: pluginterfaces/ has duplicate ftypes.h with base/. Include base/ FIRST so it wins.
+    // pluginfactory.h needs pluginterfaces/base/ipluginbase.h.
     build.include(vst3_sdk.join("base"));
+    build.include(vst3_sdk.join("pluginterfaces"));
+    build.include(vst3_sdk.join("public.sdk").join("source"));
 
     // Platform entry point
     // pluginfactory.cpp defines gPluginFactory - needed on ALL platforms
