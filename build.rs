@@ -55,14 +55,12 @@ fn main() {
     }
 
     // Add VST3 SDK include paths
-    // Fix for MSVC ftypes.h redefinition: vst3sdk root includes both base/ and pluginterfaces/
-    // which both have ftypes.h. Use explicit paths instead:
-    // - pluginterfaces (for SDK headers including ftypes.h)
-    // - public.sdk/source (for VST3 implementation files)
-    // - base/source (for base source files, NOT base/ directory to avoid ftypes.h dup)
-    build.include(vst3_sdk.join("pluginterfaces"));
+    // Fix for MSVC ftypes.h redefinition:
+    // - vst3sdk root for "pluginterfaces/base/..." paths (needed by pluginfactory.h)
+    // - public.sdk/source for VST3 implementation files
+    // - DO NOT include pluginterfaces/ or base/ separately - they duplicate ftypes.h
+    build.include(&vst3_sdk);
     build.include(vst3_sdk.join("public.sdk").join("source"));
-    build.include(vst3_sdk.join("base").join("source"));
 
     // Platform entry point
     // pluginfactory.cpp defines gPluginFactory - needed on ALL platforms
