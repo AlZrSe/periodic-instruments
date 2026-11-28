@@ -12,6 +12,32 @@ use atomic_float::AtomicF32;
 use std::sync::atomic::AtomicU8;
 use std::sync::Arc;
 
+/// TEST-ONLY: Crash injection for process isolation verification
+#[cfg(feature = "crash-injection")]
+mod crash_injection {
+    use std::sync::atomic::{AtomicU32, Ordering};
+    
+    /// Flag to enable panic injection on parameter set
+    static PANIC_ON_PARAM_SET: AtomicU32 = AtomicU32::new(0);
+    
+    /// Called from parameter setter - panics when enabled
+    pub fn maybe_panic_on_param_set() {
+        if PANIC_ON_PARAM_SET.load(Ordering::SeqCst) == 1 {
+            panic!("test panic injection: parameter set fault");
+        }
+    }
+    
+    /// Enable panic injection for next parameter set call
+    pub fn enable_panic_on_param_set() {
+        PANIC_ON_PARAM_SET.store(1, Ordering::SeqCst);
+    }
+    
+    /// Reset injection state
+    pub fn reset() {
+        PANIC_ON_PARAM_SET.store(0, Ordering::SeqCst);
+    }
+}
+
 /// Total number of parameters
 pub const PARAMETER_COUNT: usize = 5;
 
@@ -163,6 +189,10 @@ impl ParameterValues {
     
     /// Set parameter by index (for automation/host)
     pub fn set_parameter(&self, index: usize, value: f32) {
+        // TEST-ONLY: Panic injection on parameter set
+        #[cfg(feature = "crash-injection")]
+        crate::plugin::parameters::crash_injection::maybe_panic_on_param_set();
+        
         match ParameterId::from_index(index) {
             Some(ParameterId::ElementSelector) => self.set_element_selector_normalized(value),
             Some(ParameterId::Mass) => self.mass.store(value.clamp(0.0, 1.0), std::sync::atomic::Ordering::Relaxed),

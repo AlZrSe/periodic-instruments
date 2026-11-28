@@ -99,6 +99,14 @@ impl PluginProcessor for PeriodicInstrumentsProcessor {
             return Ok(());
         }
         
+        // TEST-ONLY: Crash injection - abort on 3rd process() call
+        #[cfg(feature = "crash-injection")]
+        crate::plugin::processor::crash_injection::maybe_crash();
+        
+        // TEST-ONLY: Hang injection - infinite loop when enabled
+        #[cfg(feature = "crash-injection")]
+        crate::plugin::processor::crash_injection::maybe_hang();
+        
         let num_samples = context.num_samples();
         let num_output_channels = context.outputs().len();
         
@@ -136,6 +144,72 @@ impl PluginProcessor for PeriodicInstrumentsProcessor {
     
     fn can_do_automation(&self) -> bool {
         true
+    }
+}
+
+// ============================================================================
+// TEST-ONLY: Crash Injection for Process Isolation Verification
+// ============================================================================
+// This module is ONLY compiled when the `crash-injection` feature is enabled.
+// It provides controlled fault injection points to verify that the host's
+// process isolation correctly contains crashes, panics, and hangs in the
+// child plugin process without affecting the test runner.
+//
+// DO NOT enable this feature in production builds.
+// ============================================================================
+
+#[cfg(feature = "crash-injection")]
+mod crash_injection {
+    use std::sync::atomic::{AtomicU32, Ordering};
+    
+    /// Counter for process() calls - triggers abort on 3rd call (0-indexed = 2)
+    static PROCESS_COUNT: AtomicU32 = AtomicU32::new(0);
+    
+    /// Flag to enable panic injection on parameter set
+    static PANIC_ON_PARAM_SET: AtomicU32 = AtomicU32::new(0);
+    
+    /// Flag to enable infinite loop in process()
+    static HANG_IN_PROCESS: AtomicU32 = AtomicU32::new(0);
+    
+    /// Called from process() - aborts on 3rd invocation
+    pub fn maybe_crash() {
+        let count = PROCESS_COUNT.fetch_add(1, Ordering::SeqCst);
+        if count == 2 { // 3rd call (0-indexed: 0, 1, 2)
+            std::process::abort();
+        }
+    }
+    
+    /// Called from parameter setter - panics when enabled
+    pub fn maybe_panic_on_param_set() {
+        if PANIC_ON_PARAM_SET.load(Ordering::SeqCst) == 1 {
+            panic!("test panic injection: parameter set fault");
+        }
+    }
+    
+    /// Called from process() - infinite loop when enabled
+    pub fn maybe_hang() {
+        if HANG_IN_PROCESS.load(Ordering::SeqCst) == 1 {
+            loop { 
+                std::hint::spin_loop(); 
+            }
+        }
+    }
+    
+    /// Enable panic injection for next parameter set call
+    pub fn enable_panic_on_param_set() {
+        PANIC_ON_PARAM_SET.store(1, Ordering::SeqCst);
+    }
+    
+    /// Enable hang in process loop
+    pub fn enable_hang_in_process() {
+        HANG_IN_PROCESS.store(1, Ordering::SeqCst);
+    }
+    
+    /// Reset all injection state (for test isolation)
+    pub fn reset() {
+        PROCESS_COUNT.store(0, Ordering::SeqCst);
+        PANIC_ON_PARAM_SET.store(0, Ordering::SeqCst);
+        HANG_IN_PROCESS.store(0, Ordering::SeqCst);
     }
 }
 

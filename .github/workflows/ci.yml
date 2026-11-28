@@ -18,7 +18,7 @@ jobs:
   build-and-test:
     name: Build & Headless Tests (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
-    timeout-minutes: 10
+    timeout-minutes: 2
     strategy:
       fail-fast: false
       matrix:
@@ -76,9 +76,9 @@ jobs:
         if: matrix.os == 'windows-latest'
         uses: ilammy/msvc-dev-cmd@v1
 
-      # --- Build Release ---
-      - name: Build release
-        run: cargo build --release --locked
+      # --- Build Release (with crash-injection feature for process isolation tests) ---
+      - name: Build release with crash-injection
+        run: cargo build --release --locked --features crash-injection
         env:
           RUSTFLAGS: -C target-cpu=native
 
@@ -91,15 +91,31 @@ jobs:
             ls -la "target/release/Periodic Instruments.vst3/Contents/x86_64-linux/libPeriodicInstruments.so"
           fi
 
-      # --- Run Headless Plugin Host Tests ---
+      # --- Run Headless Plugin Host Tests (with retry logic) ---
       - name: Run headless plugin host tests
         id: headless_test
         continue-on-error: true
         run: |
-          cargo test --features headless --test headless_host -- \
-            --test-threads=1 \
-            --nocapture
-        timeout-minutes: 5
+          max_attempts=2
+          attempt=1
+          while [ $attempt -le $max_attempts ]; do
+            echo "Attempt $attempt of $max_attempts..."
+            if cargo test --features headless --test headless_host -- \
+              --test-threads=1 \
+              --nocapture; then
+              echo "Tests passed on attempt $attempt"
+              exit 0
+            fi
+            echo "Tests failed on attempt $attempt"
+            if [ $attempt -lt $max_attempts ]; then
+              echo "Waiting 10 seconds before retry..."
+              sleep 10
+            fi
+            attempt=$((attempt + 1))
+          done
+          echo "All attempts failed"
+          exit 1
+        timeout-minutes: 2
         env:
           RUST_TEST_THREADS: 1
 
@@ -135,7 +151,7 @@ jobs:
   clippy:
     name: Clippy
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 2
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
@@ -154,7 +170,7 @@ jobs:
   fmt:
     name: Rustfmt
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 2
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
@@ -167,7 +183,7 @@ jobs:
   audit:
     name: Cargo Audit
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 2
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable

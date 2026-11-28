@@ -73,6 +73,9 @@ vst3 = ["nice-plug/vst3"]
 # For testing without GUI
 headless = []
 
+# Test-only feature for fault injection (process isolation verification)
+crash-injection = []
+
 [target.'cfg(windows)'.dependencies]
 windows = { version = "0.58", features = ["Win32_Foundation", "Win32_System_LibraryLoader", "Win32_System_Console"] }
 
