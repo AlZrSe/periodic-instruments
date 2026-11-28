@@ -12,13 +12,15 @@ pub mod processor;
 pub mod editor;
 
 use nice_plug::prelude::*;
-use std::sync::Arc;
 
 // Re-export main types
 pub use factory::PeriodicInstrumentsFactory;
-pub use parameters::{ParameterId, PARAMETER_COUNT, ParameterInfo};
+pub use parameters::{ParameterId, PARAMETER_COUNT};
 pub use processor::PeriodicInstrumentsProcessor;
 pub use editor::PeriodicInstrumentsEditor;
+
+// Re-export nice-plug types
+pub use nice_plug::{ParameterInfo, ParameterFlags, EditorBounds, PluginError, PluginInfo};
 
 /// Plugin metadata constants
 pub const PLUGIN_NAME: &str = "Periodic Instruments";
@@ -51,11 +53,7 @@ impl Plugin for PeriodicInstrumentsPlugin {
     const NAME: &'static str = PLUGIN_NAME;
     const VENDOR: &'static str = PLUGIN_VENDOR;
     const VERSION: &'static str = PLUGIN_VERSION;
-    const CATEGORY: &'static str = PLUGIN_CATEGORY;
-    const UNIQUE_ID: &'static str = PLUGIN_UNIQUE_ID;
-    const CLASS_ID: [u8; 16] = PLUGIN_CLASS_ID;
     
-    type Factory = PeriodicInstrumentsFactory;
     type Processor = PeriodicInstrumentsProcessor;
     type Editor = PeriodicInstrumentsEditor;
 }

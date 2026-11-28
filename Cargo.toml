@@ -15,7 +15,7 @@ crate-type = ["cdylib", "rlib"]
 
 [dependencies]
 # VST3 plugin framework with iced GUI support
-nice-plug = { version = "0.3", features = ["vst3", "editor"] }
+nice-plug = { version = "0.4", features = ["vst3", "editor"] }
 
 # GUI framework (re-exported via nice-plug)
 iced = { version = "0.12", features = ["default", "wgpu", "tokio"] }

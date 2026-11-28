@@ -3,7 +3,7 @@
 //! Provides the VST3 editor view using nice-plug's iced integration.
 
 use nice_plug::prelude::*;
-use nice_plug::iced::IcedEditor;
+use nice_plug::IcedEditor;
 use crate::ui::{EditorState, EditorMessage, PluginEditor, DEFAULT_WIDTH, DEFAULT_HEIGHT, MIN_WIDTH, MIN_HEIGHT};
 
 /// Plugin editor wrapper for nice-plug
