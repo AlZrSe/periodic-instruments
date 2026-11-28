@@ -1,0 +1,273 @@
+# CI Workflow for Periodic Instruments
+# Runs on every push and PR to main
+# Includes: build, headless plugin host tests, clippy, fmt
+
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+
+env:
+  CARGO_TERM_COLOR: always
+  RUST_BACKTRACE: 1
+
+jobs:
+  build:
+    name: Build Release (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, ubuntu-latest]
+    steps:
+      # --- Checkout ---
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # --- Setup Rust ---
+      - name: Setup Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          target: ${{ matrix.os == 'windows-latest' && 'x86_64-pc-windows-msvc' || 'x86_64-unknown-linux-gnu' }}
+
+      # --- Cache Cargo ---
+      - name: Cache Cargo registry
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-
+
+      # --- System Dependencies (Linux) ---
+      - name: Install Linux dependencies
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libasound2-dev \
+            alsa-utils \
+            libudev-dev \
+            libdbus-1-dev \
+            libxcb1-dev \
+            libx11-xcb-dev \
+            libwayland-dev \
+            libxkbcommon-dev \
+            pkg-config \
+            clang \
+            lld
+          # Ensure pkg-config can find ALSA
+          export PKG_CONFIG_PATH="/usr/lib/x86_64-linux-gnu/pkgconfig:/usr/share/pkgconfig:${PKG_CONFIG_PATH}"
+
+      # --- System Dependencies (Windows) ---
+      - name: Setup MSVC environment
+        if: matrix.os == 'windows-latest'
+        uses: ilammy/msvc-dev-cmd@v1
+
+      # --- Build Release (with crash-injection feature for process isolation tests) ---
+      - name: Build release with crash-injection
+        run: cargo build --release --features crash-injection
+        env:
+          RUSTFLAGS: -C target-cpu=native
+
+      # --- Verify VST3 Bundle ---
+      - name: Verify VST3 bundle exists
+        run: |
+          if [ "${{ matrix.os }}" = "windows-latest" ]; then
+            ls -la "target/release/Periodic Instruments.vst3/Contents/x86_64-win/Periodic Instruments.dll"
+          else
+            ls -la "target/release/Periodic Instruments.vst3/Contents/x86_64-linux/libPeriodicInstruments.so"
+          fi
+
+      # --- Upload build artifacts ---
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-${{ matrix.os }}
+          path: target/release/Periodic Instruments.vst3
+          retention-days: 1
+
+  headless-tests:
+    name: Headless Tests (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 5
+    needs: build
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, ubuntu-latest]
+        include:
+          - os: windows-latest
+            artifact_name: test-results-windows
+            log_artifact: headless-host-logs-windows
+          - os: ubuntu-latest
+            artifact_name: test-results-linux
+            log_artifact: headless-host-logs-linux
+
+    steps:
+      # --- Checkout ---
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # --- Setup Rust ---
+      - name: Setup Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          target: ${{ matrix.os == 'windows-latest' && 'x86_64-pc-windows-msvc' || 'x86_64-unknown-linux-gnu' }}
+
+      # --- Cache Cargo ---
+      - name: Cache Cargo registry
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-
+
+      # --- System Dependencies (Linux) ---
+      - name: Install Linux dependencies
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libasound2-dev \
+            alsa-utils \
+            libudev-dev \
+            libdbus-1-dev \
+            libxcb1-dev \
+            libx11-xcb-dev \
+            libwayland-dev \
+            libxkbcommon-dev \
+            pkg-config \
+            clang \
+            lld
+          # Ensure pkg-config can find ALSA
+          export PKG_CONFIG_PATH="/usr/lib/x86_64-linux-gnu/pkgconfig:/usr/share/pkgconfig:${PKG_CONFIG_PATH}"
+
+      # --- System Dependencies (Windows) ---
+      - name: Setup MSVC environment
+        if: matrix.os == 'windows-latest'
+        uses: ilammy/msvc-dev-cmd@v1
+
+      # --- Download build artifacts ---
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: build-${{ matrix.os }}
+          path: target/release
+
+      # --- Run Headless Plugin Host Tests (with retry logic) ---
+      - name: Run headless plugin host tests
+        id: headless_test
+        continue-on-error: true
+        run: |
+          max_attempts=2
+          attempt=1
+          while [ $attempt -le $max_attempts ]; do
+            echo "Attempt $attempt of $max_attempts..."
+            if cargo test --features "headless crash-injection" --test headless_host -- \
+              --test-threads=1 \
+              --nocapture; then
+              echo "Tests passed on attempt $attempt"
+              exit 0
+            fi
+            echo "Tests failed on attempt $attempt"
+            if [ $attempt -lt $max_attempts ]; then
+              echo "Waiting 10 seconds before retry..."
+              sleep 10
+            fi
+            attempt=$((attempt + 1))
+          done
+          echo "All attempts failed"
+          exit 1
+        timeout-minutes: 3
+        env:
+          RUST_TEST_THREADS: 1
+
+      # --- Upload JUnit XML (always) ---
+      - name: Upload JUnit XML results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact_name }}
+          path: test-results*.xml
+          retention-days: 30
+
+      # --- Upload logs on failure ---
+      - name: Upload failure logs
+        if: failure() && steps.headless_test.outcome == 'failure'
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.log_artifact }}
+          path: |
+            *.log
+            *.dmp
+            core.*
+          retention-days: 30
+
+      # --- Fail job if headless tests failed ---
+      - name: Check headless test result
+        if: steps.headless_test.outcome == 'failure'
+        run: |
+          echo "Headless plugin host tests failed!"
+          exit 1
+
+  # --- Code Quality Checks ---
+  clippy:
+    name: Clippy
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ubuntu-cargo-clippy-${{ hashFiles('**/Cargo.lock') }}
+      - name: Run clippy
+        run: cargo clippy --all-targets --all-features -- -D warnings
+
+  fmt:
+    name: Rustfmt
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt
+      - name: Check formatting
+        run: cargo fmt --all --check
+
+  # --- Summary ---
+  summary:
+    name: CI Summary
+    runs-on: ubuntu-latest
+    needs: [build, headless-tests, clippy, fmt]
+    if: always()
+    steps:
+      - name: Check all jobs passed
+        run: |
+          if [ "${{ needs.build.result }}" != "success" ] || \
+             [ "${{ needs.headless-tests.result }}" != "success" ] || \
+             [ "${{ needs.clippy.result }}" != "success" ] || \
+             [ "${{ needs.fmt.result }}" != "success" ]; then
+            echo "Some CI jobs failed"
+            exit 1
+          fi
+          echo "All CI checks passed!"

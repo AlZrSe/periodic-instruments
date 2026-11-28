@@ -15,22 +15,21 @@ crate-type = ["cdylib", "rlib"]
 
 [dependencies]
 # VST3 plugin framework with iced GUI support
-nice-plug = { version = "0.3", features = ["vst3", "iced", "vst3-sys"] }
+nice-plug = { version = "0.4", features = ["vst3", "editor"] }
 
 # GUI framework (re-exported via nice-plug)
-iced = { version = "0.12", features = ["core", "runtime", "widgets", "text", "graphics", "wgpu"] }
+iced = { version = "0.12", features = ["default", "wgpu", "tokio"] }
 
 # Atomic floats for lock-free parameter sharing
-atomic_float = "0.4"
+atomic_float = "1.1"
 
 # Lock-free synchronization
 parking_lot = "0.12"
 
-# Parameter smoothing
-nih-plug = { version = "0.4", features = ["vst3"] }
+
 
 # UID/FUID generation
-uid = "1.0"
+uid = "0.1"
 
 # Logging
 tracing = "0.1"
@@ -44,7 +43,17 @@ serde_json = "1.0"
 dirs = "5.0"
 
 [build-dependencies]
-vst3-sys = { version = "0.3", features = ["plugin"] }
+vst3 = "0.3"
+
+[dev-dependencies]
+vst3-host = { version = "0.11", features = ["process-isolation"] }
+junit-report = "0.2"
+tempfile = "3.10"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+anyhow = "1.0"
+tokio = { version = "1.0", features = ["rt", "time", "process", "fs", "sync"] }
+chrono = { version = "0.4", features = ["serde"] }
 
 [profile.release]
 lto = true
@@ -59,10 +68,13 @@ debug = true
 
 [features]
 default = ["vst3"]
-vst3 = ["nice-plug/vst3", "nih-plug/vst3"]
+vst3 = ["nice-plug/vst3"]
 
 # For testing without GUI
 headless = []
+
+# Test-only feature for fault injection (process isolation verification)
+crash-injection = []
 
 [target.'cfg(windows)'.dependencies]
 windows = { version = "0.58", features = ["Win32_Foundation", "Win32_System_LibraryLoader", "Win32_System_Console"] }
