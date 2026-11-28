@@ -7,16 +7,15 @@
 
 use std::env;
 use std::path::{Path, PathBuf};
-use std::process::Command;
 
 fn main() {
     // Tell cargo to rerun if these change
     println!("cargo:rerun-if-changed=build.rs");
     println!("cargo:rerun-if-env-changed=VST3_SDK");
-    
+
     // Find VST3 SDK
     let vst3_sdk = find_vst3_sdk();
-    
+
     if let Some(sdk_path) = vst3_sdk {
         println!("cargo:rustc-env=VST3_SDK={}", sdk_path.display());
         println!("cargo:info=VST3 SDK found at: {}", sdk_path.display());
@@ -25,10 +24,10 @@ fn main() {
         println!("cargo:warning=On Windows: C:\\Program Files\\Steinberg\\VST3 SDK");
         println!("cargo:warning=On Linux: /usr/local/vst3sdk or /opt/vst3sdk");
     }
-    
+
     // Set up vst3-sys
     println!("cargo:rustc-cfg=vst3_sdk_found");
-    
+
     // Platform-specific linker args
     if cfg!(target_os = "windows") {
         // Windows: link against VST3 SDK libraries if needed
@@ -39,7 +38,7 @@ fn main() {
         println!("cargo:rustc-link-lib=dylib=pthread");
         println!("cargo:rustc-link-lib=dylib=rt");
     }
-    
+
     // Post-build: create VST3 bundle
     if env::var("CARGO_CFG_TARGET_FAMILY").unwrap_or_default() != "wasm" {
         create_vst3_bundle();
@@ -55,7 +54,7 @@ fn find_vst3_sdk() -> Option<PathBuf> {
             return Some(path);
         }
     }
-    
+
     // 2. Check default locations by platform
     let default_paths = if cfg!(target_os = "windows") {
         vec![
@@ -78,13 +77,13 @@ fn find_vst3_sdk() -> Option<PathBuf> {
     } else {
         vec![]
     };
-    
+
     for path in default_paths {
         if path.exists() {
             return Some(path);
         }
     }
-    
+
     None
 }
 
@@ -93,20 +92,20 @@ fn create_vst3_bundle() {
     let target_dir = env::var("CARGO_TARGET_DIR").unwrap_or_else(|_| "target".to_string());
     let profile = env::var("PROFILE").unwrap_or_else(|_| "release".to_string());
     let out_dir = PathBuf::from(&target_dir).join(&profile);
-    
+
     let plugin_name = "Periodic Instruments";
     let bundle_name = format!("{}.vst3", plugin_name);
-    
+
     #[cfg(target_os = "windows")]
     {
         create_windows_bundle(&out_dir, plugin_name, &bundle_name);
     }
-    
+
     #[cfg(target_os = "linux")]
     {
         create_linux_bundle(&out_dir, plugin_name, &bundle_name);
     }
-    
+
     #[cfg(target_os = "macos")]
     {
         create_macos_bundle(&out_dir, plugin_name, &bundle_name);
@@ -116,10 +115,10 @@ fn create_vst3_bundle() {
 #[cfg(target_os = "windows")]
 fn create_windows_bundle(out_dir: &Path, plugin_name: &str, bundle_name: &str) {
     use std::fs;
-    
+
     let dll_name = format!("{}.dll", plugin_name);
     let dll_path = out_dir.join(&dll_name);
-    
+
     if !dll_path.exists() {
         // Try alternative naming
         let alt_dll = out_dir.join("periodic_instruments.dll");
@@ -130,19 +129,19 @@ fn create_windows_bundle(out_dir: &Path, plugin_name: &str, bundle_name: &str) {
             return;
         }
     }
-    
+
     let bundle_dir = out_dir.join(bundle_name);
     let contents_dir = bundle_dir.join("Contents");
     let x64_dir = contents_dir.join("x86_64-win");
     let resources_dir = contents_dir.join("Resources");
-    
+
     fs::create_dir_all(&x64_dir).ok();
     fs::create_dir_all(&resources_dir).ok();
-    
+
     // Copy DLL
     let dest_dll = x64_dir.join(&dll_name);
     fs::copy(&dll_path, &dest_dll).ok();
-    
+
     // Create moduleinfo.json
     let module_info = format!(r#"{{
   "factory": "{}",
@@ -157,19 +156,19 @@ fn create_windows_bundle(out_dir: &Path, plugin_name: &str, bundle_name: &str) {
     }}
   ]
 }}"#, plugin_name, plugin_name, env!("CARGO_PKG_VERSION"), "AlZrSe");
-    
+
     fs::write(resources_dir.join("moduleinfo.json"), module_info).ok();
-    
+
     println!("cargo:info=Created VST3 bundle at {:?}", bundle_dir);
 }
 
 #[cfg(target_os = "linux")]
 fn create_linux_bundle(out_dir: &Path, plugin_name: &str, bundle_name: &str) {
     use std::fs;
-    
+
     let so_name = format!("lib{}.so", plugin_name.replace(' ', ""));
     let so_path = out_dir.join(&so_name);
-    
+
     if !so_path.exists() {
         // Try alternative naming
         let alt_so = out_dir.join("libperiodic_instruments.so");
@@ -180,19 +179,19 @@ fn create_linux_bundle(out_dir: &Path, plugin_name: &str, bundle_name: &str) {
             return;
         }
     }
-    
+
     let bundle_dir = out_dir.join(bundle_name);
     let contents_dir = bundle_dir.join("Contents");
     let x64_dir = contents_dir.join("x86_64-linux");
     let resources_dir = contents_dir.join("Resources");
-    
+
     fs::create_dir_all(&x64_dir).ok();
     fs::create_dir_all(&resources_dir).ok();
-    
+
     // Copy .so
     let dest_so = x64_dir.join(&so_name);
     fs::copy(&so_path, &dest_so).ok();
-    
+
     // Create moduleinfo.json
     let module_info = format!(r#"{{
   "factory": "{}",
@@ -207,19 +206,19 @@ fn create_linux_bundle(out_dir: &Path, plugin_name: &str, bundle_name: &str) {
     }}
   ]
 }}"#, plugin_name, plugin_name, env!("CARGO_PKG_VERSION"), "AlZrSe");
-    
+
     fs::write(resources_dir.join("moduleinfo.json"), module_info).ok();
-    
+
     println!("cargo:info=Created VST3 bundle at {:?}", bundle_dir);
 }
 
 #[cfg(target_os = "macos")]
 fn create_macos_bundle(out_dir: &Path, plugin_name: &str, bundle_name: &str) {
     use std::fs;
-    
+
     let dylib_name = format!("lib{}.dylib", plugin_name.replace(' ', ""));
     let dylib_path = out_dir.join(&dylib_name);
-    
+
     if !dylib_path.exists() {
         let alt_dylib = out_dir.join("libperiodic_instruments.dylib");
         if alt_dylib.exists() {
@@ -229,19 +228,19 @@ fn create_macos_bundle(out_dir: &Path, plugin_name: &str, bundle_name: &str) {
             return;
         }
     }
-    
+
     let bundle_dir = out_dir.join(bundle_name);
     let contents_dir = bundle_dir.join("Contents");
     let macos_dir = contents_dir.join("MacOS");
     let resources_dir = contents_dir.join("Resources");
-    
+
     fs::create_dir_all(&macos_dir).ok();
     fs::create_dir_all(&resources_dir).ok();
-    
+
     // Copy dylib
     let dest_dylib = macos_dir.join(plugin_name);
     fs::copy(&dylib_path, &dest_dylib).ok();
-    
+
     // Create Info.plist
     let info_plist = format!(r#"<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
@@ -267,9 +266,9 @@ fn create_macos_bundle(out_dir: &Path, plugin_name: &str, bundle_name: &str) {
     <true/>
 </dict>
 </plist>"#, plugin_name, plugin_name, env!("CARGO_PKG_VERSION"), env!("CARGO_PKG_VERSION"));
-    
+
     fs::write(contents_dir.join("Info.plist"), info_plist).ok();
-    
+
     // Create moduleinfo.json
     let module_info = format!(r#"{{
   "factory": "{}",
@@ -284,8 +283,8 @@ fn create_macos_bundle(out_dir: &Path, plugin_name: &str, bundle_name: &str) {
     }}
   ]
 }}"#, plugin_name, plugin_name, env!("CARGO_PKG_VERSION"), "AlZrSe");
-    
+
     fs::write(resources_dir.join("moduleinfo.json"), module_info).ok();
-    
+
     println!("cargo:info=Created VST3 bundle at {:?}", bundle_dir);
 }
