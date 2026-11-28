@@ -53,6 +53,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y \
             libasound2-dev \
+            alsa-utils \
             libudev-dev \
             libdbus-1-dev \
             libxcb1-dev \
@@ -62,6 +63,8 @@ jobs:
             pkg-config \
             clang \
             lld
+          # Ensure pkg-config can find ALSA
+          export PKG_CONFIG_PATH="/usr/lib/x86_64-linux-gnu/pkgconfig:/usr/share/pkgconfig:${PKG_CONFIG_PATH}"
 
       # --- System Dependencies (Windows) ---
       - name: Setup MSVC environment
@@ -138,6 +141,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y \
             libasound2-dev \
+            alsa-utils \
             libudev-dev \
             libdbus-1-dev \
             libxcb1-dev \
@@ -147,6 +151,8 @@ jobs:
             pkg-config \
             clang \
             lld
+          # Ensure pkg-config can find ALSA
+          export PKG_CONFIG_PATH="/usr/lib/x86_64-linux-gnu/pkgconfig:/usr/share/pkgconfig:${PKG_CONFIG_PATH}"
 
       # --- System Dependencies (Windows) ---
       - name: Setup MSVC environment
