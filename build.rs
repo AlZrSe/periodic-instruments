@@ -55,10 +55,9 @@ fn main() {
     }
 
     // Add VST3 SDK include paths
-    // Note: pluginterfaces/ has duplicate ftypes.h with base/. Include base/ FIRST so it wins.
-    // pluginfactory.h needs pluginterfaces/base/ipluginbase.h.
-    build.include(vst3_sdk.join("base"));
-    build.include(vst3_sdk.join("pluginterfaces"));
+    // Include vst3sdk root so that #include "pluginterfaces/base/..." works correctly.
+    // Do NOT add base/ or pluginterfaces/ separately - they cause duplicate ftypes.h.
+    build.include(&vst3_sdk);
     build.include(vst3_sdk.join("public.sdk").join("source"));
 
     // Platform entry point
