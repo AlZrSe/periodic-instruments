@@ -55,12 +55,13 @@ fn main() {
     }
 
     // Add VST3 SDK include paths
-    // Original working configuration: include vst3sdk root, pluginterfaces, public.sdk/source, and base.
-    // This works on CI (both Linux and Windows) - MSVC handles it correctly with this order.
+    // Fix for MSVC ftypes.h redefinition: include pluginterfaces/ but NOT base/ separately.
+    // vst3sdk root provides pluginterfaces/ path. base/ftypes.h duplicates pluginterfaces/base/ftypes.h.
+    // Include base/source/ files directly without adding base/ to include path.
     build.include(&vst3_sdk);  // For "pluginterfaces/base/fplatform.h" style includes
     build.include(vst3_sdk.join("pluginterfaces"));
     build.include(vst3_sdk.join("public.sdk").join("source"));
-    build.include(vst3_sdk.join("base"));
+    // Do NOT include vst3_sdk.join("base") - it duplicates ftypes.h
 
     // Platform entry point
     // pluginfactory.cpp defines gPluginFactory - needed on ALL platforms
@@ -68,10 +69,37 @@ fn main() {
 
     if cfg!(target_os = "windows") {
         build.file(vst3_sdk.join("public.sdk").join("source").join("main").join("dllmain.cpp"));
-        // Windows: MINIMAL build (pluginfactory.cpp + dllmain.cpp + periodic_instruments.cpp only).
-        // Adding more SDK source files causes ftypes.h redefinition errors on MSVC
-        // because both base/ftypes.h and pluginterfaces/base/ftypes.h are in the include path.
-        // The minimal build worked in the original CI runs.
+        // Windows: FULL SDK build (same files as Linux) with fixed includes.
+        // Include paths: vst3sdk root + pluginterfaces + public.sdk/source (NOT base/).
+        // This avoids ftypes.h redefinition while providing all VST3 implementations.
+        // Core VST3 implementation files needed for the plugin to work
+        build.file(vst3_sdk.join("public.sdk").join("source").join("vst").join("hosting").join("processdata.cpp"));
+        build.file(vst3_sdk.join("public.sdk").join("source").join("vst").join("vstcomponent.cpp"));
+        build.file(vst3_sdk.join("public.sdk").join("source").join("vst").join("vstcomponentbase.cpp"));
+        build.file(vst3_sdk.join("public.sdk").join("source").join("vst").join("vsteditcontroller.cpp"));
+        build.file(vst3_sdk.join("public.sdk").join("source").join("vst").join("vstaudioeffect.cpp"));
+        build.file(vst3_sdk.join("public.sdk").join("source").join("vst").join("vstbus.cpp"));
+        build.file(vst3_sdk.join("public.sdk").join("source").join("vst").join("vstparameters.cpp"));
+        build.file(vst3_sdk.join("public.sdk").join("source").join("vst").join("vstpresetfile.cpp"));
+        build.file(vst3_sdk.join("public.sdk").join("source").join("vst").join("vstrepresentation.cpp"));
+        build.file(vst3_sdk.join("public.sdk").join("source").join("vst").join("vstinitiids.cpp"));
+        build.file(vst3_sdk.join("public.sdk").join("source").join("common").join("pluginview.cpp"));
+        build.file(vst3_sdk.join("public.sdk").join("source").join("common").join("commoniids.cpp"));
+        // Base SDK files - compile from base/source/ directly, no base/ in include path
+        build.file(vst3_sdk.join("base").join("funknown.cpp"));
+        build.file(vst3_sdk.join("base").join("coreiids.cpp"));
+        build.file(vst3_sdk.join("base").join("ustring.cpp"));
+        build.file(vst3_sdk.join("base").join("conststringtable.cpp"));
+        build.file(vst3_sdk.join("base").join("source").join("baseiids.cpp"));
+        build.file(vst3_sdk.join("base").join("source").join("updatehandler.cpp"));
+        build.file(vst3_sdk.join("base").join("source").join("fobject.cpp"));
+        build.file(vst3_sdk.join("base").join("source").join("fstring.cpp"));
+        build.file(vst3_sdk.join("base").join("source").join("fbuffer.cpp"));
+        build.file(vst3_sdk.join("base").join("source").join("fstreamer.cpp"));
+        build.file(vst3_sdk.join("base").join("thread").join("source").join("flock.cpp"));
+        build.file(vst3_sdk.join("base").join("thread").join("source").join("fcondition.cpp"));
+        // Timer support for plugin factory
+        build.file(vst3_sdk.join("base").join("source").join("timer.cpp"));
     } else if cfg!(target_os = "linux") {
         // On Linux, compile essential SDK files for VST3 factory
         // Note: linuxmain.cpp and moduleinit.cpp are NOT included - we provide our own ModuleEntry/ModuleExit/InitModule/DeinitModule
