@@ -78,7 +78,7 @@ jobs:
 
       # --- Build Release (with crash-injection feature for process isolation tests) ---
       - name: Build release with crash-injection
-        run: cargo build --release --locked --features crash-injection
+        run: cargo build --release --features crash-injection
         env:
           RUSTFLAGS: -C target-cpu=native
 
@@ -100,7 +100,7 @@ jobs:
           attempt=1
           while [ $attempt -le $max_attempts ]; do
             echo "Attempt $attempt of $max_attempts..."
-            if cargo test --features headless --test headless_host -- \
+            if cargo test --features "headless crash-injection" --test headless_host -- \
               --test-threads=1 \
               --nocapture; then
               echo "Tests passed on attempt $attempt"
