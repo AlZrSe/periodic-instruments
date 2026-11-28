@@ -23,16 +23,14 @@ using namespace Steinberg::Vst;
 //------------------------------------------------------------------------
 // Plugin IDs
 //------------------------------------------------------------------------
-// CIDs must match manifest.ttl exactly (big-endian byte order as per VST3 spec)
-// Use four uint32 constructor with little-endian byte order to match manifest.ttl bytes
-// manifest.ttl Processor CID: "706572696f646963496e737472756d00"
-// Bytes: 70 65 72 69 6f 64 69 63 49 6e 73 74 72 75 6d 00
-// As little-endian uint32: 0x69726570, 0x6369646f, 0x74736e49, 0x006d7572
-static const FUID kProcessorUID (0x69726570, 0x6369646f, 0x74736e49, 0x006d7572);
-// manifest.ttl Controller CID: "706572696f646963496e737472430000"
-// Bytes: 70 65 72 69 6f 64 69 63 49 6e 73 74 72 43 00 00
-// As little-endian uint32: 0x69726570, 0x6369646f, 0x74736e49, 0x00437272
-static const FUID kControllerUID (0x69726570, 0x6369646f, 0x74736e49, 0x00437272);
+// CIDs must match manifest.ttl / moduleinfo.json exactly (raw byte order).
+// Define them as byte arrays so they are platform-independent (COM_COMPATIBLE
+// changes the interpretation of the four-uint32 FUID constructor).
+static const TUID kProcessorTUID = { 'p','e','r','i','o','d','i','c','I','n','s','t','r','u','m', 0 };
+static const FUID kProcessorUID = FUID::fromTUID (kProcessorTUID);
+
+static const TUID kControllerTUID = { 'p','e','r','i','o','d','i','c','I','n','s','t','r','C', 0, 0 };
+static const FUID kControllerUID = FUID::fromTUID (kControllerTUID);
 
 //------------------------------------------------------------------------
 // Audio Processor
@@ -42,6 +40,9 @@ class PeriodicInstrumentsProcessor : public AudioEffect
 public:
     PeriodicInstrumentsProcessor () : AudioEffect ()
     {
+        addAudioOutput (u"Stereo Out", SpeakerArr::kStereo);
+        addEventInput (u"MIDI In", 1);
+        setControllerClass (kControllerUID);
     }
 
     // No process override - use AudioEffect default
@@ -49,6 +50,16 @@ public:
     tresult PLUGIN_API setupProcessing (ProcessSetup& setup) override
     {
         return AudioEffect::setupProcessing (setup);
+    }
+
+    tresult PLUGIN_API setProcessing (TBool state) override
+    {
+        return kResultOk;
+    }
+
+    tresult PLUGIN_API process (ProcessData& data) override
+    {
+        return kResultOk;
     }
 
     tresult PLUGIN_API canProcessSampleSize (int32 symbolicSampleSize) override
@@ -66,6 +77,8 @@ public:
 //------------------------------------------------------------------------
 static FUnknown* createProcessor (void*) { return (IAudioProcessor*)new PeriodicInstrumentsProcessor (); }
 
+static FUnknown* createController (void*) { return (IEditController*)new Vst::EditController (); }
+
 extern "C" {
 
 #if defined(_MSC_VER)
@@ -75,29 +88,36 @@ SMTG_EXPORT_SYMBOL __attribute__((used))
 #endif
 IPluginFactory* PLUGIN_API GetPluginFactory ()
 {
-    // Use a local static factory to avoid global gPluginFactory symbol issues
-    // This avoids the ambiguous symbol conflict with SDK's pluginfactory.h
-    static CPluginFactory* factory = nullptr;
-    if (!factory)
+    // Use the SDK's global gPluginFactory so its destructor can clear the
+    // pointer when the last reference is released. A function-local static
+    // would become a dangling pointer after release-to-zero, causing a
+    // use-after-free crash on the next GetPluginFactory call.
+    if (!Steinberg::gPluginFactory)
     {
         static PFactoryInfo factoryInfo ("AlZrSe",
             "https://github.com/AlZrSe/periodic-instruments",
             "",
             Vst::kDefaultFactoryFlags);
-        factory = new CPluginFactory (factoryInfo);
+        Steinberg::gPluginFactory = new CPluginFactory (factoryInfo);
 
         static PClassInfo processorInfo (kProcessorUID,
             PClassInfo::kManyInstances,
             kVstAudioEffectClass,
             "Periodic Instruments");
-        factory->registerClass (&processorInfo, createProcessor);
+        Steinberg::gPluginFactory->registerClass (&processorInfo, createProcessor);
+
+        static PClassInfo controllerInfo (kControllerUID,
+            PClassInfo::kManyInstances,
+            kVstComponentControllerClass,
+            "Periodic Instruments");
+        Steinberg::gPluginFactory->registerClass (&controllerInfo, createController);
     }
     else
     {
-        factory->addRef ();
+        Steinberg::gPluginFactory->addRef ();
     }
 
-    return factory;
+    return Steinberg::gPluginFactory;
 }
 
 // Module entry/exit functions required by VST3

@@ -20,13 +20,14 @@ vst:PeriodicInstrumentsProcessor
     vst:category "Audio Module Class" ;
     vst:subCategory "Instrument" ;
     vst:subCategory "Synth" ;
-    vst:numAudioInputs 1 ;
+    vst:numAudioInputs 0 ;
     vst:numAudioOutputs 1 ;
     vst:numEventInputs 1 ;
-    vst:numEventOutputs 1 .
+    vst:numEventOutputs 0 .
 
 vst:PeriodicInstrumentsController
     a vst:Controller ;
     doap:name "Periodic Instruments Controller" ;
     vst:cid "706572696f646963496e737472430000" ;
     vst:category "Component Controller Class" .
+
