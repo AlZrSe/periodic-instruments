@@ -12,31 +12,9 @@ use atomic_float::AtomicF32;
 use std::sync::atomic::AtomicU8;
 use std::sync::Arc;
 
-/// TEST-ONLY: Crash injection for process isolation verification
+// Re-export crash injection functions from processor (single source of truth)
 #[cfg(feature = "crash-injection")]
-mod crash_injection {
-    use std::sync::atomic::{AtomicU32, Ordering};
-    
-    /// Flag to enable panic injection on parameter set
-    static PANIC_ON_PARAM_SET: AtomicU32 = AtomicU32::new(0);
-    
-    /// Called from parameter setter - panics when enabled
-    pub fn maybe_panic_on_param_set() {
-        if PANIC_ON_PARAM_SET.load(Ordering::SeqCst) == 1 {
-            panic!("test panic injection: parameter set fault");
-        }
-    }
-    
-    /// Enable panic injection for next parameter set call
-    pub fn enable_panic_on_param_set() {
-        PANIC_ON_PARAM_SET.store(1, Ordering::SeqCst);
-    }
-    
-    /// Reset injection state
-    pub fn reset() {
-        PANIC_ON_PARAM_SET.store(0, Ordering::SeqCst);
-    }
-}
+use crate::plugin::processor::crash_injection::{maybe_panic_on_param_set, enable_panic_on_param_set, reset};
 
 /// Total number of parameters
 pub const PARAMETER_COUNT: usize = 5;
@@ -172,8 +150,47 @@ impl ParameterValues {
     }
     
     /// Set element selector from normalized value (0.0-1.0)
+    /// 
+    /// Special control values (for crash-injection feature only):
+    /// - normalized ≈ -1/93  → element 0: enable panic injection on next param set
+    /// - normalized ≈ 94/93  → element 95: enable hang injection in process()
+    /// - normalized ≈ 95/93  → element 96: reset process counter (abort on 3rd process)
+    /// - normalized ≈ 96/93  → element 97: reset all injection state
     pub fn set_element_selector_normalized(&self, normalized: f32) {
-        let value = (normalized * 93.0).round().clamp(0.0, 93.0) as u8 + 1;
+        // Compute raw value before clamping to detect control values
+        let raw_value = (normalized * 93.0).round() as i32;
+        
+        #[cfg(feature = "crash-injection")]
+        {
+            // Check for control values (elements 0, 95, 96, 97)
+            // Element = raw_value + 1, so raw_value = element - 1
+            match raw_value {
+                -1 => { // Element 0: enable panic injection
+                    crate::plugin::processor::crash_injection::enable_panic_on_param_set();
+                    tracing::debug!("Fault injection: panic on param set ENABLED via Element=0");
+                    return; // Don't update element selector
+                }
+                94 => { // Element 95: enable hang injection
+                    crate::plugin::processor::crash_injection::enable_hang_in_process();
+                    tracing::debug!("Fault injection: hang in process ENABLED via Element=95");
+                    return; // Don't update element selector
+                }
+                95 => { // Element 96: reset process counter
+                    crate::plugin::processor::crash_injection::reset_process_counter();
+                    tracing::debug!("Fault injection: process counter RESET via Element=96");
+                    return; // Don't update element selector
+                }
+                96 => { // Element 97: reset all injection state
+                    crate::plugin::processor::crash_injection::reset();
+                    tracing::debug!("Fault injection: ALL STATE RESET via Element=97");
+                    return; // Don't update element selector
+                }
+                _ => {}
+            }
+        }
+        
+        // Normal element selection (1-94)
+        let value = raw_value.clamp(0, 93) as u8 + 1;
         self.element_selector.store(value, std::sync::atomic::Ordering::Relaxed);
     }
     
@@ -191,7 +208,7 @@ impl ParameterValues {
     pub fn set_parameter(&self, index: usize, value: f32) {
         // TEST-ONLY: Panic injection on parameter set
         #[cfg(feature = "crash-injection")]
-        crate::plugin::parameters::crash_injection::maybe_panic_on_param_set();
+        maybe_panic_on_param_set();
         
         match ParameterId::from_index(index) {
             Some(ParameterId::ElementSelector) => self.set_element_selector_normalized(value),

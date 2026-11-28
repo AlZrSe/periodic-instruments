@@ -1128,6 +1128,16 @@ impl PluginTestRunner {
             }
         }
 
+        // Control values for Element Selector (parameter 0) via normalized values:
+        // Element 0 (panic):     normalized = -1.0/93.0
+        // Element 95 (hang):     normalized = 94.0/93.0
+        // Element 96 (abort):    normalized = 95.0/93.0
+        // Element 97 (reset):    normalized = 96.0/93.0
+        const ELEMENT_PANIC_NORM: f32 = -1.0 / 93.0;
+        const ELEMENT_HANG_NORM: f32 = 94.0 / 93.0;
+        const ELEMENT_ABORT_NORM: f32 = 95.0 / 93.0;
+        const ELEMENT_RESET_NORM: f32 = 96.0 / 93.0;
+
         // TS-H13.1: Plugin Crash Injected (abort on 3rd process() call)
         // The plugin is built with crash-injection feature, which calls std::process::abort()
         // on the 3rd process() call. The host should detect the child process death.
@@ -1187,21 +1197,12 @@ impl PluginTestRunner {
         ).await);
 
         // TS-H13.2: Plugin Panic (panic on parameter set)
+        // Control mechanism: Set Element Selector to 0 (normalized -1/93) to enable panic injection,
+        // then set any parameter to trigger the panic.
         results.push(run_isolation_test(
             "TS-H13.2: Plugin Panic — Test Runner Survives",
             plugin_path.clone(),
             |mut plugin| async move {
-                // Enable panic injection on next parameter set
-                // Note: This requires the plugin to have a way to trigger the panic.
-                // Since we can't call the internal function directly, we rely on the fact
-                // that the crash-injection feature enables panic on parameter set when triggered.
-                // For this test, we'll set a parameter which should trigger the panic if
-                // the injection is enabled. However, we need a way to enable it first.
-                // 
-                // Since we can't call enable_panic_on_param_set() from outside,
-                // this test verifies that IF a panic occurs in the child, the runner survives.
-                // The actual panic injection would need a control mechanism (e.g., special parameter value).
-                
                 let sample_rate = 44100.0;
                 let block_size = 256;
                 
@@ -1212,29 +1213,42 @@ impl PluginTestRunner {
                     return (false, format!("Activate failed: {}", e));
                 }
                 
-                // Try setting a parameter - in a real implementation with a control mechanism,
-                // this would trigger the panic. For now, verify the host handles parameter errors.
+                // Enable panic injection via Element Selector = 0 (normalized -1/93)
+                if let Err(e) = plugin.set_parameter(0, ELEMENT_PANIC_NORM).await {
+                    return (false, format!("Failed to enable panic injection: {}", e));
+                }
+                
+                // Now set a parameter (Mass) to trigger the panic
                 let result = plugin.set_parameter(1, 0.5).await;
                 
                 let _ = plugin.set_active(false).await;
                 
                 match result {
                     Err(e) => {
-                        let msg = format!("Parameter set failed (expected if panic injected): {}", e);
-                        (true, msg)
+                        let msg = format!("Child process panicked as expected: {}", e);
+                        let msg_lower = msg.to_lowercase();
+                        let looks_like_panic = msg_lower.contains("panic") 
+                            || msg_lower.contains("process") 
+                            || msg_lower.contains("died") 
+                            || msg_lower.contains("crash")
+                            || msg_lower.contains("signal")
+                            || msg_lower.contains("exit")
+                            || msg_lower.contains("broken pipe")
+                            || msg_lower.contains("connection");
+                        (looks_like_panic, msg)
                     }
-                    Ok(_) => {
-                        // If no panic was triggered (no control mechanism), test passes as "no panic occurred"
-                        (true, "Parameter set succeeded; panic injection not triggered (requires control mechanism)".to_string())
-                    }
+                    Ok(_) => (false, "Expected panic injection but parameter set succeeded".to_string()),
                 }
             },
             30,
         ).await);
 
         // TS-H13.3: Timeout Kill (infinite loop in process)
+        // Control mechanism: Set Element Selector to 95 (normalized 94/93) to enable hang injection,
+        // then call process() to trigger the infinite loop. The host should kill the child process
+        // after the test timeout (30s).
         results.push(run_isolation_test(
-            "TS-H13.3: Timeout Kill",
+            "TS-H13.3: Plugin Hang — Host Kills Child Process",
             plugin_path.clone(),
             |mut plugin| async move {
                 let sample_rate = 44100.0;
@@ -1247,20 +1261,42 @@ impl PluginTestRunner {
                     return (false, format!("Activate failed: {}", e));
                 }
                 
-                // Process once normally
+                // Process once normally to verify plugin works
                 let mut inputs: Vec<Vec<f32>> = vec![vec![0.0; block_size]; 0];
                 let mut outputs: Vec<Vec<f32>> = vec![vec![0.0; block_size]; 2];
                 if let Err(e) = plugin.process(&mut inputs, &mut outputs, &[]).await {
                     return (false, format!("Initial process failed: {}", e));
                 }
                 
-                // The hang injection would be triggered by a control mechanism.
-                // Since we can't enable it from outside, we test that the per-test timeout works.
-                // This test primarily verifies the timeout enforcement in the test runner itself.
+                // Enable hang injection via Element Selector = 95 (normalized 94/93)
+                if let Err(e) = plugin.set_parameter(0, ELEMENT_HANG_NORM).await {
+                    return (false, format!("Failed to enable hang injection: {}", e));
+                }
+                
+                // Call process() - this should hang in the child process
+                let mut inputs: Vec<Vec<f32>> = vec![vec![0.0; block_size]; 0];
+                let mut outputs: Vec<Vec<f32>> = vec![vec![0.0; block_size]; 2];
+                let result = plugin.process(&mut inputs, &mut outputs, &[]).await;
                 
                 let _ = plugin.set_active(false).await;
                 
-                (true, "Timeout enforcement verified at test runner level (30s per-test timeout)".to_string())
+                // The host should detect the hang and kill the child process, returning an error
+                match result {
+                    Err(e) => {
+                        let msg = format!("Child process hung and was killed: {}", e);
+                        let msg_lower = msg.to_lowercase();
+                        let looks_like_kill = msg_lower.contains("timeout") 
+                            || msg_lower.contains("kill") 
+                            || msg_lower.contains("process") 
+                            || msg_lower.contains("died") 
+                            || msg_lower.contains("signal")
+                            || msg_lower.contains("exit")
+                            || msg_lower.contains("broken pipe")
+                            || msg_lower.contains("connection");
+                        (looks_like_kill, msg)
+                    }
+                    Ok(_) => (false, "Expected hang injection but process() returned successfully".to_string()),
+                }
             },
             30,
         ).await);
