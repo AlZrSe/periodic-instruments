@@ -1,10 +1,10 @@
 //! Plugin UI module — periodic-table view, preset browser, macro knobs
 //!
-//! This module contains the iced-based GUI implementation via nice-plug.
+//! This module contains the iced-based GUI implementation.
 //! Currently provides a minimal editor registration.
 
-use iced::{Element, Length, Sandbox, Settings, Theme};
-use nice_plug::iced::IcedEditor;
+use iced::{Element, Length, Sandbox, Theme};
+use iced::widget::{container, text, Column};
 
 /// Main editor state for the plugin UI
 #[derive(Default)]
@@ -35,8 +35,6 @@ impl Sandbox for EditorState {
     }
 
     fn view(&self) -> Element<EditorMessage> {
-        use iced::widget::{container, text, Column};
-        
         container(
             Column::new()
                 .push(text("Periodic Instruments").size(32))
@@ -55,9 +53,6 @@ impl Sandbox for EditorState {
         Theme::Dark
     }
 }
-
-/// Editor type alias for nice-plug integration
-pub type PluginEditor = IcedEditor<EditorState, EditorMessage>;
 
 /// Default editor dimensions
 pub const DEFAULT_WIDTH: u32 = 1200;

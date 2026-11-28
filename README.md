@@ -98,6 +98,53 @@ cargo build --release
 
 Built plugins are output to `target/release/`.
 
+### Pluginval Integration Testing
+
+The project uses [pluginval](https://github.com/steinbergmedia/vst3sdk) (VST3 Plugin Validator) for automated VST3 compliance testing in CI. Tests run at two strictness levels:
+
+- **Level 5** — Host compatibility baseline: plugin discovery, lifecycle, parameter enumeration, basic audio processing, editor creation
+- **Level 7** — Extended testing: state save/restore, parameter automation, MIDI handling, variable block sizes (64–4096), variable sample rates (44.1k–192k), bypass handling, multiple instantiation
+
+#### Running pluginval Locally
+
+**Linux/macOS:**
+```bash
+# Run at strictness level 7 (default)
+./scripts/run-pluginval.sh
+
+# Run at strictness level 5
+./scripts/run-pluginval.sh target/release/Periodic\ Instruments.vst3 5
+
+# Specify pluginval version
+./scripts/run-pluginval.sh target/release/Periodic\ Instruments.vst3 7 v0.3.8
+```
+
+**Windows (PowerShell):**
+```powershell
+# Run at strictness level 7 (default)
+.\scripts\run-pluginval.ps1
+
+# Run at strictness level 5
+.\scripts\run-pluginval.ps1 -StrictnessLevel 5
+
+# Specify pluginval version
+.\scripts\run-pluginval.ps1 -StrictnessLevel 7 -PluginvalVersion "v0.3.8"
+```
+
+#### CI Integration
+
+The GitHub Actions workflow (`.github/workflows/pluginval.yml`) runs pluginval on:
+- **Windows** — Self-hosted runner labeled `win`
+- **Linux** — Self-hosted runner labeled `linux` (with Xvfb for headless GUI tests)
+
+Both strictness levels 5 and 7 must pass on both platforms. The workflow:
+- Downloads and caches the pluginval binary (pinned version)
+- Uses the VST3 bundle from `target/release/Periodic Instruments.vst3`
+- Fails the build on any validation error (hard gate)
+- Uploads pluginval logs as artifacts on failure
+
+See [`specs/task-020-pluginval/`](specs/task-020-pluginval/) for detailed specifications and acceptance criteria.
+
 ### Project Layout
 
 ```
@@ -133,3 +180,5 @@ Created by **AlZrSe**. Inspired by the periodic table and the idea that every el
 ---
 
 *Periodic Instruments — hear the elements.*
+#   T r i g g e r   C I  
+ 

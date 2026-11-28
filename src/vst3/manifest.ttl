@@ -1,0 +1,33 @@
+@prefix vst: <http://www.steinberg.net/vst3#> .
+@prefix doap: <http://usefulinc.com/ns/doap#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+
+vst:PeriodicInstruments
+    a vst:Plugin ;
+    doap:name "Periodic Instruments" ;
+    doap:homepage <https://github.com/AlZrSe/periodic-instruments> ;
+    doap:license <http://creativecommons.org/licenses/by/4.0/> ;
+    vst:pluginCategory "Instrument|Synth" ;
+    vst:hasController vst:PeriodicInstrumentsController ;
+    vst:hasAudioProcessor vst:PeriodicInstrumentsProcessor ;
+    vst:requiredHostContext vst:Module ;
+    vst:canReplacePrefix false .
+
+vst:PeriodicInstrumentsProcessor
+    a vst:AudioProcessor ;
+    doap:name "Periodic Instruments" ;
+    vst:cid "706572696f646963496e737472756d00" ;
+    vst:category "Audio Module Class" ;
+    vst:subCategory "Instrument" ;
+    vst:subCategory "Synth" ;
+    vst:numAudioInputs 0 ;
+    vst:numAudioOutputs 1 ;
+    vst:numEventInputs 1 ;
+    vst:numEventOutputs 0 .
+
+vst:PeriodicInstrumentsController
+    a vst:Controller ;
+    doap:name "Periodic Instruments Controller" ;
+    vst:cid "706572696f646963496e737472430000" ;
+    vst:category "Component Controller Class" .
+

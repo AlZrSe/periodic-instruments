@@ -1,0 +1,360 @@
+name: Pluginval Validation
+
+on:
+  push:
+    branches: [main, develop, "task/**"]
+  pull_request:
+    branches: [main, develop]
+
+permissions:
+  contents: read
+
+env:
+  PLUGINVAL_VERSION: "v2.0.0-beta3"
+  VST3_BUNDLE_NAME: "Periodic Instruments.vst3"
+  VST3_BUNDLE_PATH: "target/release/Periodic Instruments.vst3"
+
+jobs:
+  pluginval-windows:
+    name: Pluginval Windows (Level 5 & 7)
+    runs-on: windows-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up MSVC environment (Windows)
+        uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: amd64
+
+      - name: Install Rust toolchain with MSVC target (Windows)
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: stable
+          target: x86_64-pc-windows-msvc
+
+      - name: Build VST3 plugin (Windows)
+        shell: pwsh
+        run: |
+          Write-Host "Building VST3 plugin..."
+          # Use direct cargo call with proper waiting - avoid Start-Process which can have exit code issues
+          cargo build --release --target x86_64-pc-windows-msvc 2>&1 | Tee-Object -Variable buildOutput
+          $exitCode = $LASTEXITCODE
+          Write-Host "Build output:"
+          $buildOutput
+          Write-Host "Cargo exit code: $exitCode"
+          
+          if ($exitCode -ne 0) {
+            Write-Error ('Cargo build failed with exit code {0}' -f $exitCode)
+            exit $exitCode
+          }
+          
+          # The bundle will be at target/x86_64-pc-windows-msvc/release/Periodic Instruments.vst3
+          $bundlePath = "target/x86_64-pc-windows-msvc/release/Periodic Instruments.vst3"
+          if (-not (Test-Path $bundlePath)) {
+            Write-Error ('VST3 bundle not found at {0} after build' -f $bundlePath)
+            Write-Host "Contents of target/x86_64-pc-windows-msvc/release:"
+            Get-ChildItem "target/x86_64-pc-windows-msvc/release" -Force
+            Write-Host "Contents of target:"
+            Get-ChildItem "target" -Force -Recurse -ErrorAction SilentlyContinue | Where-Object { $_.Name -like "*.vst3" }
+            exit 1
+          }
+          
+          Write-Host ("Built VST3 bundle at {0}" -f $bundlePath)
+          # Debug: check bundle contents
+          Write-Host "=== DEBUG: Check bundle structure ==="
+          Get-ChildItem "$bundlePath\Contents" -Force -Recurse -ErrorAction SilentlyContinue | Select-Object FullName
+          Write-Host "=== DEBUG: Check for manifest.ttl ==="
+          if (Test-Path "$bundlePath\Contents\manifest.ttl") { Write-Host "manifest.ttl FOUND" } else { Write-Host "manifest.ttl NOT FOUND" }
+          Write-Host "=== DEBUG: Check for moduleinfo.json ==="
+          if (Test-Path "$bundlePath\Contents\moduleinfo.json") { Write-Host "moduleinfo.json FOUND" } else { Write-Host "moduleinfo.json NOT FOUND" }
+          # Copy to expected location for later steps
+          $expectedPath = "${{ env.VST3_BUNDLE_PATH }}"
+          if (-not (Test-Path (Split-Path $expectedPath -Parent))) {
+            New-Item -ItemType Directory -Path (Split-Path $expectedPath -Parent) -Force
+          }
+          # Use Robocopy for reliable directory copy on Windows
+          Write-Host "=== DEBUG: Copying bundle with robocopy ==="
+          robocopy "$bundlePath" "$expectedPath" /E /R:0 /W:0
+          # Robocopy returns 0 for "no files copied", 1 for "files copied successfully"
+          # Both are success cases for us
+          $robocopyExitCode = $LASTEXITCODE
+          if ($robocopyExitCode -gt 7) {
+            Write-Error ('Robocopy failed with exit code {0}' -f $robocopyExitCode)
+            exit $robocopyExitCode
+          }
+          Write-Host ("Copied bundle to {0}" -f $expectedPath)
+          # Verify copy
+          Write-Host "=== DEBUG: Verify copied bundle ==="
+          if (Test-Path "$expectedPath\Contents\manifest.ttl") { Write-Host "manifest.ttl FOUND in copied bundle" } else { Write-Host "manifest.ttl NOT FOUND in copied bundle" }
+          if (Test-Path "$expectedPath\Contents\moduleinfo.json") { Write-Host "moduleinfo.json FOUND in copied bundle" } else { Write-Host "moduleinfo.json NOT FOUND in copied bundle" }
+          # List all files in copied bundle
+          Write-Host "=== DEBUG: Copied bundle structure ==="
+          Get-ChildItem "$expectedPath\Contents" -Force -Recurse -ErrorAction SilentlyContinue | Select-Object FullName
+          Write-Host "=== DEBUG: DLL imports ==="
+          dumpbin /imports "$expectedPath\Contents\x86_64-win\Periodic Instruments.dll" 2>&1 | Select-String "DLL Name" -Context 0,5
+          # Explicitly exit with success code (robocopy exit code 1 = success)
+          exit 0
+
+      - name: Download pluginval (Windows)
+        id: download-pluginval-windows
+        uses: actions/cache@v4
+        with:
+          path: ${{ runner.temp }}/pluginval-windows
+          key: pluginval-windows-${{ env.PLUGINVAL_VERSION }}
+          restore-keys: |
+            pluginval-windows-
+      - name: Install pluginval (Windows)
+        if: steps.download-pluginval-windows.outputs.cache-hit != 'true'
+        shell: powershell
+        run: |
+          $pluginvalDir = "${{ runner.temp }}/pluginval-windows"
+          $url = "https://github.com/Tracktion/pluginval/releases/download/${{ env.PLUGINVAL_VERSION }}/pluginval_Windows.zip"
+          Write-Host "Downloading pluginval from $url"
+          Invoke-WebRequest -Uri $url -OutFile "$pluginvalDir.zip"
+          Expand-Archive -Path "$pluginvalDir.zip" -DestinationPath $pluginvalDir -Force
+          Write-Host "Pluginval installed to $pluginvalDir"
+          $pluginvalExe = Get-ChildItem -Path $pluginvalDir -Filter "pluginval.exe" -Recurse | Select-Object -First 1
+          if ($pluginvalExe) {
+            Write-Host "Found pluginval at $($pluginvalExe.FullName)"
+            echo "PLUGINVAL_PATH=$($pluginvalExe.FullName)" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          } else {
+            Write-Error "pluginval.exe not found in extracted archive"
+            exit 1
+          }
+
+      - name: Set pluginval path (Windows cached)
+        if: steps.download-pluginval-windows.outputs.cache-hit == 'true'
+        shell: powershell
+        run: |
+          $pluginvalDir = "${{ runner.temp }}/pluginval-windows"
+          $pluginvalExe = Get-ChildItem -Path $pluginvalDir -Filter "pluginval.exe" -Recurse | Select-Object -First 1
+          if ($pluginvalExe) {
+            Write-Host "Using cached pluginval at $($pluginvalExe.FullName)"
+            echo "PLUGINVAL_PATH=$($pluginvalExe.FullName)" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          } else {
+            Write-Error "Cached pluginval.exe not found"
+            exit 1
+          }
+
+      - name: Verify VST3 bundle exists (Windows)
+        shell: powershell
+        run: |
+          $bundlePath = "${{ env.VST3_BUNDLE_PATH }}"
+          if (-not (Test-Path $bundlePath)) {
+            Write-Error "VST3 bundle not found at $bundlePath"
+            Write-Host "Contents of target/release:"
+            Get-ChildItem "target/release" -Force
+            exit 1
+          }
+          Write-Host "Found VST3 bundle at $bundlePath"
+
+      - name: Run pluginval Level 5 (Windows)
+        id: pluginval-level5-windows
+        shell: powershell
+        run: |
+          $pluginval = $env:PLUGINVAL_PATH
+          $bundle = "${{ env.VST3_BUNDLE_PATH }}"
+          $logFile = "${{ runner.temp }}/pluginval-level5-windows.log"
+          Write-Host "Running pluginval Level 5 on $bundle"
+          & $pluginval validate --strictness-level 5 "$bundle" 2>&1 | Tee-Object -FilePath $logFile
+          $exitCode = $LASTEXITCODE
+          Write-Host "Exit code: $exitCode"
+          echo "LOG_FILE=$logFile" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          echo "EXIT_CODE=$exitCode" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          if ($exitCode -ne 0) { exit $exitCode }
+
+      - name: Upload pluginval Level 5 logs on failure (Windows)
+        if: failure() && env.EXIT_CODE != 0
+        uses: actions/upload-artifact@v4
+        with:
+          name: pluginval-logs-windows-level5
+          path: ${{ runner.temp }}/pluginval-level5-windows.log
+          retention-days: 7
+
+      - name: Run pluginval Level 7 (Windows)
+        id: pluginval-level7-windows
+        shell: powershell
+        run: |
+          $pluginval = $env:PLUGINVAL_PATH
+          $bundle = "${{ env.VST3_BUNDLE_PATH }}"
+          $logFile = "${{ runner.temp }}/pluginval-level7-windows.log"
+          Write-Host "Running pluginval Level 7 on $bundle"
+          & $pluginval validate --strictness-level 7 "$bundle" 2>&1 | Tee-Object -FilePath $logFile
+          $exitCode = $LASTEXITCODE
+          Write-Host "Exit code: $exitCode"
+          echo "LOG_FILE=$logFile" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          echo "EXIT_CODE=$exitCode" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          if ($exitCode -ne 0) { exit $exitCode }
+
+      - name: Upload pluginval Level 7 logs on failure (Windows)
+        if: failure() && env.EXIT_CODE != 0
+        uses: actions/upload-artifact@v4
+        with:
+          name: pluginval-logs-windows-level7
+          path: ${{ runner.temp }}/pluginval-level7-windows.log
+          retention-days: 7
+
+  pluginval-linux:
+    name: Pluginval Linux (Level 5 & 7)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Install VST3 SDK dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y xvfb libxcb-cursor0 libxkbcommon-x11-0
+
+      - name: Build VST3 plugin (Linux)
+        run: |
+          echo "Building VST3 plugin..."
+          cargo build --release 2>&1 | tee build.log
+          # Find the bundle - it may be in target/<target>/release/ for cross-compilation
+          BUNDLE_PATH=$(find target -name "Periodic Instruments.vst3" -type d 2>/dev/null | head -1)
+          if [ ! -d "$BUNDLE_PATH" ]; then
+            echo "VST3 bundle not found after build"
+            find target -name "Periodic Instruments.vst3" -type d 2>/dev/null
+            exit 1
+          fi
+          echo "Built VST3 bundle at $BUNDLE_PATH"
+          echo "=== DEBUG: Check .so file in OUT_DIR ==="
+          find target/release/build -name "*.so" -type f 2>/dev/null | head -20
+          echo "=== DEBUG: Check bundle structure ==="
+          find "$BUNDLE_PATH" -type f 2>/dev/null | sort
+          echo "=== DEBUG: Check bundle .so file ==="
+          ls -la "$BUNDLE_PATH/Contents/x86_64-linux/" 2>/dev/null || echo "Bundle directory not found"
+          echo "=== DEBUG: Check moduleinfo.json ==="
+          cat "$BUNDLE_PATH/Contents/moduleinfo.json" 2>/dev/null || echo "moduleinfo.json not found"
+          echo ""
+          echo "=== DEBUG: Check manifest.ttl ==="
+          cat "$BUNDLE_PATH/Contents/manifest.ttl" 2>/dev/null || echo "manifest.ttl not found"
+          echo ""
+          echo "=== DEBUG: Verify bundle structure for VST3 ==="
+          ls -la "$BUNDLE_PATH/Contents/"
+          ls -la "$BUNDLE_PATH/Contents/x86_64-linux/"
+          echo ""
+          echo "=== DEBUG: Exported symbols ==="
+          nm -D --defined-only "$BUNDLE_PATH/Contents/x86_64-linux/Periodic Instruments.so" 2>/dev/null | grep -iE 'GetPluginFactory|ModuleEntry|ModuleExit' || echo "VST3 symbols NOT FOUND"
+           echo "=== DEBUG: Library dependencies ==="
+           ldd "$BUNDLE_PATH/Contents/x86_64-linux/Periodic Instruments.so" 2>&1 || echo "ldd failed"
+          echo "=== DEBUG: All exported symbols ==="
+          nm -D --defined-only "$BUNDLE_PATH/Contents/x86_64-linux/Periodic Instruments.so" 2>/dev/null | head -50
+          echo "=== DEBUG: Check for gPluginFactory ==="
+          nm -D --defined-only "$BUNDLE_PATH/Contents/x86_64-linux/Periodic Instruments.so" 2>/dev/null | grep -i "gPluginFactory" || echo "gPluginFactory NOT FOUND"
+          echo "=== DEBUG: build.rs output ==="
+          grep -i "debug\|exported\|VST3 symbols" build.log 2>/dev/null || echo "No debug output in build.log"
+          # Copy bundle to expected location for later steps
+          EXPECTED_PATH="target/release/Periodic Instruments.vst3"
+          if [ "$BUNDLE_PATH" != "$EXPECTED_PATH" ]; then
+            mkdir -p "$(dirname "$EXPECTED_PATH")"
+            cp -r "$BUNDLE_PATH" "$EXPECTED_PATH"
+            echo "Copied bundle to $EXPECTED_PATH"
+          fi
+          echo "Built VST3 bundle at $BUNDLE_PATH"
+      - name: Download pluginval (Linux)
+        id: download-pluginval-linux
+        uses: actions/cache@v4
+        with:
+          path: ${{ runner.temp }}/pluginval-linux
+          key: pluginval-linux-${{ env.PLUGINVAL_VERSION }}
+          restore-keys: |
+            pluginval-linux-
+      - name: Install pluginval (Linux)
+        if: steps.download-pluginval-linux.outputs.cache-hit != 'true'
+        run: |
+          PLUGINVAL_DIR="${{ runner.temp }}/pluginval-linux"
+          URL="https://github.com/Tracktion/pluginval/releases/download/${{ env.PLUGINVAL_VERSION }}/pluginval_Linux.zip"
+          echo "Downloading pluginval from $URL"
+          mkdir -p "$PLUGINVAL_DIR"
+          curl -L -o "$PLUGINVAL_DIR.zip" "$URL"
+          unzip -o "$PLUGINVAL_DIR.zip" -d "$PLUGINVAL_DIR"
+          echo "Pluginval installed to $PLUGINVAL_DIR"
+          PLUGINVAL_EXE=$(find "$PLUGINVAL_DIR" -name "pluginval" -type f | head -1)
+          if [ -n "$PLUGINVAL_EXE" ]; then
+            echo "Found pluginval at $PLUGINVAL_EXE"
+            chmod +x "$PLUGINVAL_EXE"
+            echo "PLUGINVAL_PATH=$PLUGINVAL_EXE" >> $GITHUB_ENV
+          else
+            echo "pluginval not found in extracted archive"
+            exit 1
+          fi
+
+      - name: Set pluginval path (Linux cached)
+        if: steps.download-pluginval-linux.outputs.cache-hit == 'true'
+        run: |
+          PLUGINVAL_DIR="${{ runner.temp }}/pluginval-linux"
+          PLUGINVAL_EXE=$(find "$PLUGINVAL_DIR" -name "pluginval" -type f | head -1)
+          if [ -n "$PLUGINVAL_EXE" ]; then
+            echo "Using cached pluginval at $PLUGINVAL_EXE"
+            echo "PLUGINVAL_PATH=$PLUGINVAL_EXE" >> $GITHUB_ENV
+          else
+            echo "Cached pluginval not found"
+            exit 1
+          fi
+
+      - name: Verify VST3 bundle exists (Linux)
+        run: |
+          BUNDLE_PATH="${{ env.VST3_BUNDLE_PATH }}"
+          if [ ! -d "$BUNDLE_PATH" ]; then
+            echo "VST3 bundle not found at $BUNDLE_PATH"
+            echo "Contents of target/release:"
+            ls -la target/release/
+            exit 1
+          fi
+          echo "Found VST3 bundle at $BUNDLE_PATH"
+
+      - name: Run pluginval Level 5 (Linux)
+        id: pluginval-level5-linux
+        run: |
+          PLUGINVAL="$PLUGINVAL_PATH"
+          BUNDLE="${{ env.VST3_BUNDLE_PATH }}"
+          LOG_FILE="${{ runner.temp }}/pluginval-level5-linux.log"
+          echo "Running pluginval Level 5 on $BUNDLE"
+          # First, let's see what pluginval finds in the bundle
+          echo "=== DEBUG: pluginval scan test ==="
+          xvfb-run -a "$PLUGINVAL" validate --strictness-level 5 "$BUNDLE" 2>&1 | tee -a "$LOG_FILE" || true
+          echo ""
+          echo "=== DEBUG: Full pluginval validation ==="
+          xvfb-run -a "$PLUGINVAL" validate --strictness-level 5 "$BUNDLE" 2>&1 | tee "$LOG_FILE"
+          EXIT_CODE=${PIPESTATUS[0]}
+          echo "Exit code: $EXIT_CODE"
+          echo "LOG_FILE=$LOG_FILE" >> $GITHUB_ENV
+          echo "EXIT_CODE=$EXIT_CODE" >> $GITHUB_ENV
+          if [ $EXIT_CODE -ne 0 ]; then exit $EXIT_CODE; fi
+
+      - name: Upload pluginval Level 5 logs on failure (Linux)
+        if: failure() && env.EXIT_CODE != 0
+        uses: actions/upload-artifact@v4
+        with:
+          name: pluginval-logs-linux-level5
+          path: ${{ runner.temp }}/pluginval-level5-linux.log
+          retention-days: 7
+
+      - name: Run pluginval Level 7 (Linux)
+        id: pluginval-level7-linux
+        run: |
+          PLUGINVAL="$PLUGINVAL_PATH"
+          BUNDLE="${{ env.VST3_BUNDLE_PATH }}"
+          LOG_FILE="${{ runner.temp }}/pluginval-level7-linux.log"
+          echo "Running pluginval Level 7 on $BUNDLE"
+          xvfb-run -a "$PLUGINVAL" validate --strictness-level 7 "$BUNDLE" 2>&1 | tee "$LOG_FILE"
+          EXIT_CODE=${PIPESTATUS[0]}
+          echo "Exit code: $EXIT_CODE"
+          echo "LOG_FILE=$LOG_FILE" >> $GITHUB_ENV
+          echo "EXIT_CODE=$EXIT_CODE" >> $GITHUB_ENV
+          if [ $EXIT_CODE -ne 0 ]; then exit $EXIT_CODE; fi
+
+      - name: Upload pluginval Level 7 logs on failure (Linux)
+        if: failure() && env.EXIT_CODE != 0
+        uses: actions/upload-artifact@v4
+        with:
+          name: pluginval-logs-linux-level7
+          path: ${{ runner.temp }}/pluginval-level7-linux.log
+          retention-days: 7

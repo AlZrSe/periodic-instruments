@@ -1,291 +1,340 @@
-//! Build script for VST3 plugin bundle creation
-//!
-//! This build script:
-//! 1. Locates the VST3 SDK (via VST3_SDK env var or default locations)
-//! 2. Configures vst3-sys crate
-//! 3. Creates the .vst3 bundle structure after build
+// Build script for Periodic Instruments VST3 plugin
+// Compiles the C++ VST3 plugin using the `cc` crate
+// VST3 SDK is included in the repository at vst3sdk/
 
 use std::env;
 use std::path::{Path, PathBuf};
-use std::process::Command;
 
 fn main() {
-    // Tell cargo to rerun if these change
+    eprintln!("=== build.rs STARTED ===");
+    eprintln!("TARGET: {:?}", env::var("TARGET"));
+    eprintln!("PROFILE: {:?}", env::var("PROFILE"));
+    eprintln!("OUT_DIR: {:?}", env::var("OUT_DIR"));
+    println!("cargo:rerun-if-changed=src/vst3/periodic_instruments.cpp");
     println!("cargo:rerun-if-changed=build.rs");
-    println!("cargo:rerun-if-env-changed=VST3_SDK");
-    
-    // Find VST3 SDK
-    let vst3_sdk = find_vst3_sdk();
-    
-    if let Some(sdk_path) = vst3_sdk {
-        println!("cargo:rustc-env=VST3_SDK={}", sdk_path.display());
-        println!("cargo:info=VST3 SDK found at: {}", sdk_path.display());
-    } else {
-        println!("cargo:warning=VST3 SDK not found. Set VST3_SDK environment variable or install SDK to default location.");
-        println!("cargo:warning=On Windows: C:\\Program Files\\Steinberg\\VST3 SDK");
-        println!("cargo:warning=On Linux: /usr/local/vst3sdk or /opt/vst3sdk");
-    }
-    
-    // Set up vst3-sys
-    println!("cargo:rustc-cfg=vst3_sdk_found");
-    
-    // Platform-specific linker args
-    if cfg!(target_os = "windows") {
-        // Windows: link against VST3 SDK libraries if needed
-        println!("cargo:rustc-link-search=native={}/VST3_SDK", env::var("VST3_SDK").unwrap_or_default());
-    } else if cfg!(target_os = "linux") {
-        // Linux: ensure we link correctly
-        println!("cargo:rustc-link-lib=dylib=dl");
-        println!("cargo:rustc-link-lib=dylib=pthread");
-        println!("cargo:rustc-link-lib=dylib=rt");
-    }
-    
-    // Post-build: create VST3 bundle
-    if env::var("CARGO_CFG_TARGET_FAMILY").unwrap_or_default() != "wasm" {
-        create_vst3_bundle();
-    }
-}
+    println!("cargo:rerun-if-changed=src/vst3/entry_windows.cpp");
+    println!("cargo:rerun-if-changed=src/vst3/moduleinfo.json");
+    println!("cargo:rerun-if-changed=vst3sdk");
 
-/// Find VST3 SDK installation
-fn find_vst3_sdk() -> Option<PathBuf> {
-    // 1. Check environment variable
-    if let Ok(sdk) = env::var("VST3_SDK") {
-        let path = PathBuf::from(&sdk);
-        if path.exists() {
-            return Some(path);
-        }
-    }
-    
-    // 2. Check default locations by platform
-    let default_paths = if cfg!(target_os = "windows") {
-        vec![
-            PathBuf::from(r"C:\Program Files\Steinberg\VST3 SDK"),
-            PathBuf::from(r"C:\Program Files (x86)\Steinberg\VST3 SDK"),
-            PathBuf::from(r"C:\VST3 SDK"),
-        ]
-    } else if cfg!(target_os = "linux") {
-        vec![
-            PathBuf::from("/usr/local/vst3sdk"),
-            PathBuf::from("/opt/vst3sdk"),
-            PathBuf::from("/usr/include/vst3sdk"),
-            PathBuf::from("/home/linuxbrew/.linuxbrew/include/vst3sdk"),
-        ]
-    } else if cfg!(target_os = "macos") {
-        vec![
-            PathBuf::from("/Library/Audio/Plug-Ins/VST3/"),
-            PathBuf::from("/usr/local/vst3sdk"),
-        ]
-    } else {
-        vec![]
-    };
-    
-    for path in default_paths {
-        if path.exists() {
-            return Some(path);
-        }
-    }
-    
-    None
-}
+    let _target = env::var("TARGET").unwrap();
+    let _profile = env::var("PROFILE").unwrap();
+    let out_dir = PathBuf::from(env::var("OUT_DIR").unwrap());
+    let manifest_dir = PathBuf::from(env::var("CARGO_MANIFEST_DIR").unwrap());
 
-/// Create VST3 bundle after compilation
-fn create_vst3_bundle() {
-    let target_dir = env::var("CARGO_TARGET_DIR").unwrap_or_else(|_| "target".to_string());
-    let profile = env::var("PROFILE").unwrap_or_else(|_| "release".to_string());
-    let out_dir = PathBuf::from(&target_dir).join(&profile);
-    
-    let plugin_name = "Periodic Instruments";
-    let bundle_name = format!("{}.vst3", plugin_name);
-    
+    // VST3 SDK is in the repository
+    let vst3_sdk = manifest_dir.join("vst3sdk");
+    if !vst3_sdk.exists() {
+        panic!("VST3 SDK not found at {}. The VST3 SDK must be in the vst3sdk/ directory.", vst3_sdk.display());
+    }
+
+    // Build the C++ VST3 plugin using the `cc` crate
+    // We ONLY compile our plugin source + minimal platform entry point.
+    // We DO NOT compile any SDK .cpp files - the SDK is header-only for us.
+    // This avoids redefinition errors from headers with const/inline function definitions.
+    let mut build = cc::Build::new();
+    build.cpp(true)
+         .define("VST_VERSION_STR", Some("\"0.1.0\""))
+         .define("NDEBUG", Some("1"))
+         .opt_level(3);
+
+    // Platform-specific settings
     #[cfg(target_os = "windows")]
     {
-        create_windows_bundle(&out_dir, plugin_name, &bundle_name);
+        // On Windows with MSVC
+        build.flag("/std:c++17")
+             .flag("/EHsc")  // Enable C++ exceptions
+             .flag("/W3")    // Warning level 3
+             .flag("/Zc:inline") // C++17 inline variables support
+             .define("_CRT_SECURE_NO_WARNINGS", None); // Suppress CRT warnings
     }
-    
-    #[cfg(target_os = "linux")]
+    #[cfg(not(target_os = "windows"))]
     {
-        create_linux_bundle(&out_dir, plugin_name, &bundle_name);
+        build.flag("-std=c++17")
+             .pic(true)
+             .flag("-fvisibility=default");
     }
-    
-    #[cfg(target_os = "macos")]
-    {
-        create_macos_bundle(&out_dir, plugin_name, &bundle_name);
+
+    // Add VST3 SDK include paths
+    // Fix for MSVC ftypes.h redefinition:
+    // - vst3sdk root for "pluginterfaces/base/..." paths (needed by pluginfactory.h)
+    // - public.sdk/source for VST3 implementation files
+    // - DO NOT include pluginterfaces/ or base/ separately - they duplicate ftypes.h
+    build.include(&vst3_sdk);
+    build.include(vst3_sdk.join("public.sdk").join("source"));
+
+    // Platform entry point
+    // pluginfactory.cpp defines gPluginFactory - needed on ALL platforms
+    build.file(vst3_sdk.join("public.sdk").join("source").join("main").join("pluginfactory.cpp"));
+
+    if cfg!(target_os = "windows") {
+        build.file(vst3_sdk.join("public.sdk").join("source").join("main").join("dllmain.cpp"));
+        // Windows: FULL SDK build (same files as Linux) with fixed includes.
+        // Include paths: vst3sdk root + pluginterfaces + public.sdk/source (NOT base/).
+        // This avoids ftypes.h redefinition while providing all VST3 implementations.
+        // Core VST3 implementation files needed for the plugin to work
+        build.file(vst3_sdk.join("public.sdk").join("source").join("vst").join("hosting").join("processdata.cpp"));
+        build.file(vst3_sdk.join("public.sdk").join("source").join("vst").join("vstcomponent.cpp"));
+        build.file(vst3_sdk.join("public.sdk").join("source").join("vst").join("vstcomponentbase.cpp"));
+        build.file(vst3_sdk.join("public.sdk").join("source").join("vst").join("vsteditcontroller.cpp"));
+        build.file(vst3_sdk.join("public.sdk").join("source").join("vst").join("vstaudioeffect.cpp"));
+        build.file(vst3_sdk.join("public.sdk").join("source").join("vst").join("vstbus.cpp"));
+        build.file(vst3_sdk.join("public.sdk").join("source").join("vst").join("vstparameters.cpp"));
+        build.file(vst3_sdk.join("public.sdk").join("source").join("vst").join("vstpresetfile.cpp"));
+        build.file(vst3_sdk.join("public.sdk").join("source").join("vst").join("vstrepresentation.cpp"));
+        build.file(vst3_sdk.join("public.sdk").join("source").join("vst").join("vstinitiids.cpp"));
+        build.file(vst3_sdk.join("public.sdk").join("source").join("common").join("pluginview.cpp"));
+        build.file(vst3_sdk.join("public.sdk").join("source").join("common").join("commoniids.cpp"));
+        // Base SDK files - compile from base/source/ directly, no base/ in include path
+        build.file(vst3_sdk.join("base").join("funknown.cpp"));
+        build.file(vst3_sdk.join("base").join("coreiids.cpp"));
+        build.file(vst3_sdk.join("base").join("ustring.cpp"));
+        build.file(vst3_sdk.join("base").join("conststringtable.cpp"));
+        build.file(vst3_sdk.join("base").join("source").join("baseiids.cpp"));
+        build.file(vst3_sdk.join("base").join("source").join("updatehandler.cpp"));
+        build.file(vst3_sdk.join("base").join("source").join("fobject.cpp"));
+        build.file(vst3_sdk.join("base").join("source").join("fstring.cpp"));
+        build.file(vst3_sdk.join("base").join("source").join("fbuffer.cpp"));
+        build.file(vst3_sdk.join("base").join("source").join("fstreamer.cpp"));
+        build.file(vst3_sdk.join("base").join("thread").join("source").join("flock.cpp"));
+        build.file(vst3_sdk.join("base").join("thread").join("source").join("fcondition.cpp"));
+        // Timer support for plugin factory
+        build.file(vst3_sdk.join("base").join("source").join("timer.cpp"));
+    } else if cfg!(target_os = "linux") {
+        // On Linux, compile essential SDK files for VST3 factory
+        // Note: linuxmain.cpp and moduleinit.cpp are NOT included - we provide our own ModuleEntry/ModuleExit/InitModule/DeinitModule
+        build.file(vst3_sdk.join("public.sdk").join("source").join("vst").join("hosting").join("processdata.cpp"));
+        // Core VST3 implementation files needed for the plugin to work
+        build.file(vst3_sdk.join("public.sdk").join("source").join("vst").join("vstcomponent.cpp"));
+        build.file(vst3_sdk.join("public.sdk").join("source").join("vst").join("vstcomponentbase.cpp"));
+        build.file(vst3_sdk.join("public.sdk").join("source").join("vst").join("vsteditcontroller.cpp"));
+        build.file(vst3_sdk.join("public.sdk").join("source").join("vst").join("vstaudioeffect.cpp"));
+        build.file(vst3_sdk.join("public.sdk").join("source").join("vst").join("vstbus.cpp"));
+        build.file(vst3_sdk.join("public.sdk").join("source").join("vst").join("vstparameters.cpp"));
+        build.file(vst3_sdk.join("public.sdk").join("source").join("vst").join("vstpresetfile.cpp"));
+        build.file(vst3_sdk.join("public.sdk").join("source").join("vst").join("vstrepresentation.cpp"));
+        build.file(vst3_sdk.join("public.sdk").join("source").join("vst").join("vstinitiids.cpp"));
+        build.file(vst3_sdk.join("public.sdk").join("source").join("common").join("pluginview.cpp"));
+        build.file(vst3_sdk.join("public.sdk").join("source").join("common").join("commoniids.cpp"));
+        // Base SDK files
+        build.file(vst3_sdk.join("base").join("funknown.cpp"));
+        build.file(vst3_sdk.join("base").join("coreiids.cpp"));
+        build.file(vst3_sdk.join("base").join("ustring.cpp"));
+        build.file(vst3_sdk.join("base").join("conststringtable.cpp"));
+    // Base interface IDs
+    build.file(vst3_sdk.join("base").join("source").join("baseiids.cpp"));
+    // Additional base SDK files for VST3 compatibility
+    build.file(vst3_sdk.join("base").join("source").join("updatehandler.cpp"));
+        build.file(vst3_sdk.join("base").join("source").join("fobject.cpp"));
+        build.file(vst3_sdk.join("base").join("source").join("fstring.cpp"));
+        build.file(vst3_sdk.join("base").join("source").join("fbuffer.cpp"));
+        build.file(vst3_sdk.join("base").join("source").join("fstreamer.cpp"));
+        build.file(vst3_sdk.join("base").join("thread").join("source").join("flock.cpp"));
+        build.file(vst3_sdk.join("base").join("thread").join("source").join("fcondition.cpp"));
+    // Timer support for plugin factory
+    build.file(vst3_sdk.join("base").join("source").join("timer.cpp"));
+    } else if cfg!(target_os = "macos") {
+        build.file(vst3_sdk.join("public.sdk").join("source").join("main").join("macmain.cpp"));
+        // On macOS, compile essential SDK files
+        build.file(vst3_sdk.join("public.sdk").join("source").join("main").join("moduleinit.cpp"));
+        build.file(vst3_sdk.join("public.sdk").join("source").join("main").join("pluginfactory.cpp"));
     }
+
+    // Our plugin source
+    build.file("src/vst3/periodic_instruments.cpp");
+
+    if cfg!(target_os = "windows") {
+        build.shared_flag(true);
+        build.compile("periodic_instruments");
+    } else if cfg!(target_os = "linux") {
+        build.compile("periodic_instruments");
+    } else if cfg!(target_os = "macos") {
+        build.compile("periodic_instruments");
+    }
+
+    // Link the static library into a shared library
+    if cfg!(target_os = "linux") {
+        use std::process::Command;
+        let so_path = out_dir.join("libperiodic_instruments.so");
+        // Collect all .o files
+        let mut cmd = Command::new("g++");
+        cmd.arg("-shared")
+           .arg("-fPIC")
+           .arg("-Wl,--export-dynamic")
+           .arg("-Wl,--no-undefined")
+           .arg("-o")
+           .arg(&so_path);
+        if let Ok(entries) = std::fs::read_dir(&out_dir) {
+            for entry in entries.flatten() {
+                let path = entry.path();
+                if path.extension().map_or(false, |e| e == "o") {
+                    cmd.arg(&path);
+                }
+            }
+        }
+        cmd.arg("-lstdc++");
+        let status = cmd.status().expect("Failed to link .so");
+        if !status.success() {
+            panic!("Failed to link shared library");
+        }
+        // Debug: show exported symbols
+        eprintln!("DEBUG: Exported symbols from .so:");
+        let _ = Command::new("nm")
+            .arg("-D")
+            .arg("--defined-only")
+            .arg(&so_path)
+            .status();
+        // Also check for VST3 symbols specifically
+        eprintln!("DEBUG: VST3 symbols:");
+        let _ = Command::new("bash")
+            .arg("-c")
+            .arg(format!("nm -D --defined-only {} | grep -iE 'GetPluginFactory|ModuleEntry|ModuleExit|gPluginFactory'", so_path.display()))
+            .status();
+    }
+
+    // Create VST3 bundle
+    let target_dir = PathBuf::from(env::var("CARGO_TARGET_DIR").unwrap_or_else(|_| {
+        env::var("CARGO_MANIFEST_DIR").unwrap() + "/target"
+    }));
+    // When cross-compiling, the target directory includes the target triple
+    let target = env::var("TARGET").unwrap_or_else(|_| env::var("HOST").unwrap_or_default());
+    let profile = env::var("PROFILE").unwrap_or_else(|_| "release".to_string());
+    // The build output goes to target/<target>/<profile>/build/.../out
+    // The final binary goes to target/<target>/<profile>/
+    let profile_dir = target_dir.join(&target).join(&env::var("PROFILE").unwrap_or_else(|_| "release".to_string()));
+    let bundle_name = "Periodic Instruments.vst3";
+    let bundle_dir = profile_dir.join(bundle_name);
+
+    create_vst3_bundle(&bundle_dir, &out_dir, &manifest_dir);
+
+    // The C++ VST3 plugin is built as a shared library in the bundle
+    // No need to link into the Rust library
 }
 
-#[cfg(target_os = "windows")]
-fn create_windows_bundle(out_dir: &Path, plugin_name: &str, bundle_name: &str) {
+fn create_vst3_bundle(bundle_dir: &Path, out_dir: &Path, manifest_dir: &Path) {
     use std::fs;
-    
-    let dll_name = format!("{}.dll", plugin_name);
-    let dll_path = out_dir.join(&dll_name);
-    
-    if !dll_path.exists() {
-        // Try alternative naming
-        let alt_dll = out_dir.join("periodic_instruments.dll");
-        if alt_dll.exists() {
-            fs::copy(&alt_dll, &dll_path).ok();
-        } else {
-            eprintln!("Warning: DLL not found at {:?}", dll_path);
-            return;
+
+    let contents_dir = bundle_dir.join("Contents");
+    fs::create_dir_all(&contents_dir).expect("Failed to create bundle directory");
+
+    // Create Resources directory (required for VST3 plugins)
+    let resources_dir = contents_dir.join("Resources");
+    fs::create_dir_all(&resources_dir).expect("Failed to create Resources directory");
+
+    // Platform-specific binary directory
+    let target_os = env::var("TARGET").unwrap_or_else(|_| env::var("HOST").unwrap_or_default());
+    let platform_dir = if target_os.contains("linux") {
+        contents_dir.join("x86_64-linux")
+    } else if target_os.contains("windows") {
+        contents_dir.join("x86_64-win")
+    } else if target_os.contains("macos") || target_os.contains("darwin") {
+        contents_dir.join("MacOS")
+    } else {
+        // Default fallback
+        contents_dir.join("x86_64-linux")
+    };
+
+    fs::create_dir_all(&platform_dir).expect("Failed to create platform directory");
+
+    // Find and copy the compiled library to the bundle
+    // For cross-compilation, the target OS might not match the build OS
+    let target_os = env::var("TARGET").unwrap_or_else(|_| env::var("HOST").unwrap_or_default());
+    let possible_names = if target_os.contains("windows") {
+        vec!["periodic_instruments.dll", "periodic_instruments.lib"]
+    } else if target_os.contains("macos") || target_os.contains("darwin") {
+        vec!["libperiodic_instruments.dylib", "periodic_instruments.dylib"]
+    } else {
+        vec!["libperiodic_instruments.so", "periodic_instruments.so"]
+    };
+
+    let mut found = false;
+    for name in &possible_names {
+        let src_lib = out_dir.join(name);
+        if src_lib.exists() {
+            // Use target OS from TARGET env var, not cfg!
+            let dst_name = if target_os.contains("windows") {
+                "Periodic Instruments.dll"
+            } else if target_os.contains("macos") || target_os.contains("darwin") {
+                "Periodic Instruments.dylib"
+            } else {
+                "Periodic Instruments.so"
+            };
+            fs::copy(&src_lib, platform_dir.join(dst_name))
+                .expect("Failed to copy library to bundle");
+            found = true;
+            break;
+        }
+    }
+
+    if !found {
+        // List OUT_DIR contents for debugging
+        eprintln!("OUT_DIR contents:");
+        if let Ok(entries) = fs::read_dir(out_dir) {
+            for entry in entries {
+                if let Ok(entry) = entry {
+                    eprintln!("  {}", entry.path().display());
+                }
+            }
+        }
+        panic!("Compiled library not found in OUT_DIR");
+    }
+
+    // Use absolute paths based on CARGO_MANIFEST_DIR
+    let manifest_src = manifest_dir.join("src/vst3/manifest.ttl");
+    let module_info_src = manifest_dir.join("src/vst3/moduleinfo.json");
+
+    // Copy manifest.ttl to bundle root (required by some VST3 scanners)
+    if manifest_src.exists() {
+        fs::copy(&manifest_src, bundle_dir.join("manifest.ttl"))
+            .expect("Failed to copy manifest.ttl to bundle root");
+        eprintln!("DEBUG: Copied manifest.ttl to bundle root");
+    } else {
+        eprintln!("DEBUG: manifest.ttl NOT FOUND at {:?}", manifest_src);
+    }
+
+    // Copy manifest.ttl to Contents/ (required by pluginval on Windows)
+    if manifest_src.exists() {
+        fs::copy(&manifest_src, contents_dir.join("manifest.ttl"))
+            .expect("Failed to copy manifest.ttl to bundle Contents/");
+        eprintln!("DEBUG: Copied manifest.ttl to bundle Contents/");
+    }
+
+    // Create Resources directory (required by VST3 spec)
+    let resources_dir = contents_dir.join("Resources");
+    fs::create_dir_all(&resources_dir).expect("Failed to create Resources directory");
+
+    // Copy manifest.ttl to Contents/Resources/ (required by VST3 spec)
+    if manifest_src.exists() {
+        fs::copy(&manifest_src, resources_dir.join("manifest.ttl"))
+            .expect("Failed to copy manifest.ttl to bundle Contents/Resources/");
+        eprintln!("DEBUG: Copied manifest.ttl to bundle Contents/Resources/");
+    }
+
+    // Copy moduleinfo.json to Contents/Resources/ for VST3 scanner
+    if module_info_src.exists() {
+        fs::copy(&module_info_src, resources_dir.join("moduleinfo.json"))
+            .expect("Failed to copy moduleinfo.json to bundle Contents/Resources/");
+        eprintln!("DEBUG: Copied moduleinfo.json to bundle Contents/Resources/");
+    } else {
+        eprintln!("DEBUG: moduleinfo.json NOT FOUND at {:?}", module_info_src);
+    }
+
+    // Debug: list bundle contents
+    eprintln!("DEBUG: Bundle contents:");
+    if let Ok(entries) = fs::read_dir(&contents_dir) {
+        for entry in entries {
+            if let Ok(entry) = entry {
+                eprintln!("  {}", entry.path().display());
+            }
         }
     }
     
-    let bundle_dir = out_dir.join(bundle_name);
-    let contents_dir = bundle_dir.join("Contents");
-    let x64_dir = contents_dir.join("x86_64-win");
-    let resources_dir = contents_dir.join("Resources");
-    
-    fs::create_dir_all(&x64_dir).ok();
-    fs::create_dir_all(&resources_dir).ok();
-    
-    // Copy DLL
-    let dest_dll = x64_dir.join(&dll_name);
-    fs::copy(&dll_path, &dest_dll).ok();
-    
-    // Create moduleinfo.json
-    let module_info = format!(r#"{{
-  "factory": "{}",
-  "classes": [
-    {{
-      "name": "{}",
-      "cid": "70657269-6f64-6963-496e-737472756d656e747300",
-      "category": "Instrument|Synth",
-      "version": "{}",
-      "vendor": "{}",
-      "sdkVersion": "3.7.0"
-    }}
-  ]
-}}"#, plugin_name, plugin_name, env!("CARGO_PKG_VERSION"), "AlZrSe");
-    
-    fs::write(resources_dir.join("moduleinfo.json"), module_info).ok();
-    
-    println!("cargo:info=Created VST3 bundle at {:?}", bundle_dir);
-}
-
-#[cfg(target_os = "linux")]
-fn create_linux_bundle(out_dir: &Path, plugin_name: &str, bundle_name: &str) {
-    use std::fs;
-    
-    let so_name = format!("lib{}.so", plugin_name.replace(' ', ""));
-    let so_path = out_dir.join(&so_name);
-    
-    if !so_path.exists() {
-        // Try alternative naming
-        let alt_so = out_dir.join("libperiodic_instruments.so");
-        if alt_so.exists() {
-            fs::copy(&alt_so, &so_path).ok();
-        } else {
-            eprintln!("Warning: Shared library not found at {:?}", so_path);
-            return;
+    // Debug: list bundle root contents
+    eprintln!("DEBUG: Bundle root contents:");
+    if let Ok(entries) = fs::read_dir(bundle_dir) {
+        for entry in entries {
+            if let Ok(entry) = entry {
+                eprintln!("  {}", entry.path().display());
+            }
         }
     }
-    
-    let bundle_dir = out_dir.join(bundle_name);
-    let contents_dir = bundle_dir.join("Contents");
-    let x64_dir = contents_dir.join("x86_64-linux");
-    let resources_dir = contents_dir.join("Resources");
-    
-    fs::create_dir_all(&x64_dir).ok();
-    fs::create_dir_all(&resources_dir).ok();
-    
-    // Copy .so
-    let dest_so = x64_dir.join(&so_name);
-    fs::copy(&so_path, &dest_so).ok();
-    
-    // Create moduleinfo.json
-    let module_info = format!(r#"{{
-  "factory": "{}",
-  "classes": [
-    {{
-      "name": "{}",
-      "cid": "70657269-6f64-6963-496e-737472756d656e747300",
-      "category": "Instrument|Synth",
-      "version": "{}",
-      "vendor": "{}",
-      "sdkVersion": "3.7.0"
-    }}
-  ]
-}}"#, plugin_name, plugin_name, env!("CARGO_PKG_VERSION"), "AlZrSe");
-    
-    fs::write(resources_dir.join("moduleinfo.json"), module_info).ok();
-    
-    println!("cargo:info=Created VST3 bundle at {:?}", bundle_dir);
-}
-
-#[cfg(target_os = "macos")]
-fn create_macos_bundle(out_dir: &Path, plugin_name: &str, bundle_name: &str) {
-    use std::fs;
-    
-    let dylib_name = format!("lib{}.dylib", plugin_name.replace(' ', ""));
-    let dylib_path = out_dir.join(&dylib_name);
-    
-    if !dylib_path.exists() {
-        let alt_dylib = out_dir.join("libperiodic_instruments.dylib");
-        if alt_dylib.exists() {
-            fs::copy(&alt_dylib, &dylib_path).ok();
-        } else {
-            eprintln!("Warning: dylib not found at {:?}", dylib_path);
-            return;
-        }
-    }
-    
-    let bundle_dir = out_dir.join(bundle_name);
-    let contents_dir = bundle_dir.join("Contents");
-    let macos_dir = contents_dir.join("MacOS");
-    let resources_dir = contents_dir.join("Resources");
-    
-    fs::create_dir_all(&macos_dir).ok();
-    fs::create_dir_all(&resources_dir).ok();
-    
-    // Copy dylib
-    let dest_dylib = macos_dir.join(plugin_name);
-    fs::copy(&dylib_path, &dest_dylib).ok();
-    
-    // Create Info.plist
-    let info_plist = format!(r#"<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-<plist version="1.0">
-<dict>
-    <key>CFBundleDevelopmentRegion</key>
-    <string>English</string>
-    <key>CFBundleExecutable</key>
-    <string>{}</string>
-    <key>CFBundleIdentifier</key>
-    <string>com.alzrse.periodicinstruments</string>
-    <key>CFBundleInfoDictionaryVersion</key>
-    <string>6.0</string>
-    <key>CFBundleName</key>
-    <string>{}</string>
-    <key>CFBundlePackageType</key>
-    <string>BNDL</string>
-    <key>CFBundleShortVersionString</key>
-    <string>{}</string>
-    <key>CFBundleVersion</key>
-    <string>{}</string>
-    <key>CSResourcesFileMapped</key>
-    <true/>
-</dict>
-</plist>"#, plugin_name, plugin_name, env!("CARGO_PKG_VERSION"), env!("CARGO_PKG_VERSION"));
-    
-    fs::write(contents_dir.join("Info.plist"), info_plist).ok();
-    
-    // Create moduleinfo.json
-    let module_info = format!(r#"{{
-  "factory": "{}",
-  "classes": [
-    {{
-      "name": "{}",
-      "cid": "70657269-6f64-6963-496e-737472756d656e747300",
-      "category": "Instrument|Synth",
-      "version": "{}",
-      "vendor": "{}",
-      "sdkVersion": "3.7.0"
-    }}
-  ]
-}}"#, plugin_name, plugin_name, env!("CARGO_PKG_VERSION"), "AlZrSe");
-    
-    fs::write(resources_dir.join("moduleinfo.json"), module_info).ok();
-    
-    println!("cargo:info=Created VST3 bundle at {:?}", bundle_dir);
 }

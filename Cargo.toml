@@ -11,26 +11,20 @@ keywords = ["vst3", "synthesizer", "audio-plugin", "iced"]
 
 [lib]
 name = "periodic_instruments"
-crate-type = ["cdylib", "rlib"]
+crate-type = ["staticlib", "rlib"]
 
 [dependencies]
-# VST3 plugin framework with iced GUI support
-nice-plug = { version = "0.3", features = ["vst3", "iced", "vst3-sys"] }
-
-# GUI framework (re-exported via nice-plug)
-iced = { version = "0.12", features = ["core", "runtime", "widgets", "text", "graphics", "wgpu"] }
+# GUI framework (for future UI implementation)
+iced = { version = "0.12", features = ["default", "wgpu", "tokio"] }
 
 # Atomic floats for lock-free parameter sharing
-atomic_float = "0.4"
+atomic_float = "1"
 
 # Lock-free synchronization
 parking_lot = "0.12"
 
-# Parameter smoothing
-nih-plug = { version = "0.4", features = ["vst3"] }
-
 # UID/FUID generation
-uid = "1.0"
+uuid = "1"
 
 # Logging
 tracing = "0.1"
@@ -44,7 +38,7 @@ serde_json = "1.0"
 dirs = "5.0"
 
 [build-dependencies]
-vst3-sys = { version = "0.3", features = ["plugin"] }
+cc = "1.0"
 
 [profile.release]
 lto = true
@@ -53,16 +47,15 @@ codegen-units = 1
 strip = true
 panic = "abort"
 
-[profile.release.with-debug]
-inherits = "release"
-debug = true
-
 [features]
 default = ["vst3"]
-vst3 = ["nice-plug/vst3", "nih-plug/vst3"]
+vst3 = []
 
 # For testing without GUI
 headless = []
+
+# Enable Rust VST3 plugin implementation (disabled by default, C++ plugin is used)
+rust-plugin = []
 
 [target.'cfg(windows)'.dependencies]
 windows = { version = "0.58", features = ["Win32_Foundation", "Win32_System_LibraryLoader", "Win32_System_Console"] }
@@ -75,3 +68,6 @@ unused_crate_dependencies = "warn"
 unused_imports = "warn"
 unused_variables = "warn"
 dead_code = "warn"
+
+[lints]
+workspace = true

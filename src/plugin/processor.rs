@@ -1,177 +1,168 @@
-//! Audio processor — allocation-free process callback
-//!
-//! Implements the VST3 audio processing callback with:
-//! - Silence output (stub implementation)
-//! - Allocation-free on audio thread
-//! - Variable block size and sample rate support
-//! - Bypass handling
+//! Audio processor implementation for Periodic Instruments VST3 plugin
 
-use nice_plug::prelude::*;
-use crate::plugin::parameters::{ParameterValues, ParameterId, PARAMETER_COUNT};
-use std::sync::Arc;
-use std::sync::atomic::{AtomicBool, Ordering};
+use vst3_sys::vst::{
+    IAudioProcessor, ProcessData, ProcessSetup, AudioBusBuffers, AudioBusType,
+    SpeakerArrangement, SymbolicSampleSizes, ProcessMode, kResultTrue, kResultFalse,
+    kInvalidArgument,
+};
+use std::sync::atomic::{AtomicU32, AtomicF32, Ordering};
 
-/// Maximum supported block size
-pub const MAX_BLOCK_SIZE: usize = 4096;
+/// Maximum block size supported
+const MAX_BLOCK_SIZE: usize = 4096;
 
-/// Audio processor state
+/// Number of parameters
+pub const PARAMETER_COUNT: usize = 5;
+
+/// Atomic parameter storage for lock-free audio thread access
+pub struct ParameterValues {
+    pub element_selector: AtomicU32,
+    pub mass: AtomicF32,
+    pub reactivity: AtomicF32,
+    pub state: AtomicF32,
+    pub radiance: AtomicF32,
+}
+
+impl ParameterValues {
+    pub fn new() -> Self {
+        Self {
+            element_selector: std::sync::atomic::AtomicU32::new(1), // Hydrogen
+            mass: AtomicF32::new(0.5),
+            reactivity: AtomicF32::new(0.5),
+            state: AtomicF32::new(0.5),
+            radiance: AtomicF32::new(0.5),
+        }
+    }
+}
+
+/// Periodic Instruments audio processor - outputs silence (foundation build)
 pub struct PeriodicInstrumentsProcessor {
-    /// Shared parameter values (accessed from both UI and audio threads)
-    parameters: Arc<ParameterValues>,
-    /// Current sample rate
+    param_values: std::sync::Arc<ParameterValues>,
     sample_rate: f32,
-    /// Current maximum block size
-    max_block_size: u32,
-    /// Bypass state
-    bypassed: AtomicBool,
-    /// Processing active flag
-    active: AtomicBool,
-    /// Silence buffer (pre-allocated, reused)
-    silence_buffer: [f32; MAX_BLOCK_SIZE * 2], // stereo
+    max_block_size: usize,
+    bypass: bool,
+    silence_buffer: Vec<f32>,
 }
 
 impl PeriodicInstrumentsProcessor {
-    /// Create new processor instance
-    pub fn new(sample_rate: f32, max_block_size: u32) -> Self {
-        let max_block = max_block_size as usize;
-        assert!(max_block <= MAX_BLOCK_SIZE, "Block size exceeds maximum");
-        
+    pub fn new(sample_rate: f32) -> Self {
         Self {
-            parameters: ParameterValues::new(),
+            param_values: std::sync::Arc::new(ParameterValues::new()),
             sample_rate,
-            max_block_size,
-            bypassed: AtomicBool::new(false),
-            active: AtomicBool::new(false),
-            silence_buffer: [0.0; MAX_BLOCK_SIZE * 2],
+            max_block_size: 4096,
+            bypass: false,
+            silence_buffer: vec![0.0f32; 4096],
         }
     }
-    
-    /// Get parameter values (for editor/automation)
-    pub fn parameters(&self) -> Arc<ParameterValues> {
-        Arc::clone(&self.parameters)
+
+    pub fn get_param_values(&self) -> std::sync::Arc<ParameterValues> {
+        self.param_values.clone()
     }
-    
-    /// Clear output buffers to silence
-    fn clear_output(&self, outputs: &mut [AudioBuffer<f32>], num_samples: usize) {
-        for output in outputs.iter_mut() {
-            for channel in output.channels_mut() {
-                // Clear only the valid samples
-                for sample in channel.iter_mut().take(num_samples) {
-                    *sample = 0.0;
+}
+
+impl vst3_sys::vst::IAudioProcessor for PeriodicInstrumentsProcessor {
+    fn set_bus_arrangements(
+        &self,
+        _inputs: *const vst3_sys::vst::SpeakerArrangement,
+        _num_ins: i32,
+        _outputs: *const vst3_sys::vst::SpeakerArrangement,
+        _num_outs: i32,
+    ) -> i32 {
+        vst3_sys::vst::kResultTrue
+    }
+
+    fn get_bus_arrangement(
+        &self,
+        _bus_type: vst3_sys::vst::BusType,
+        _bus_index: i32,
+        _arrangement: *mut vst3_sys::vst::SpeakerArrangement,
+    ) -> i32 {
+        vst3_sys::vst::kResultFalse
+    }
+
+    fn can_process_sample_size(&self, symbolic_sample_size: i32) -> i32 {
+        if symbolic_sample_size == vst3_sys::vst::SymbolicSampleSizes::Sample32 as i32 {
+            vst3_sys::vst::kResultTrue
+        } else {
+            vst3_sys::vst::kInvalidArgument
+        }
+    }
+
+    fn setup_processing(&self, setup: *mut ProcessSetup) -> i32 {
+        if setup.is_null() {
+            return vst3_sys::vst::kInvalidArgument;
+        }
+        
+        unsafe {
+            let setup = &mut *setup;
+            if setup.max_samples_per_block > 4096 {
+                return vst3_sys::vst::kInvalidArgument;
+            }
+            if setup.symbolic_sample_size != vst3_sys::vst::SymbolicSampleSizes::Sample32 as i32 {
+                return vst3_sys::vst::kInvalidArgument;
+            }
+            // In a real implementation, we'd store sample rate and block size
+        }
+        vst3_sys::vst::kResultTrue
+    }
+
+    fn set_active(&self, _state: i32) -> i32 {
+        vst3_sys::vst::kResultTrue
+    }
+
+    fn process(&self, data: *mut ProcessData) -> i32 {
+        if data.is_null() {
+            return vst3_sys::vst::kInvalidArgument;
+        }
+        
+        unsafe {
+            let data = &mut *data;
+            
+            // Handle bypass - pass through
+            if data.process_mode & vst3_sys::vst::ProcessMode::kBypass as i32 != 0 {
+                // Pass-through: copy inputs to outputs
+                if let (Some(inputs), Some(outputs)) = (data.inputs.as_mut(), data.outputs.as_mut()) {
+                    for (in_bus, out_bus) in inputs.iter_mut().zip(outputs.iter_mut()) {
+                        if let (Some(in_audio), Some(out_audio)) = (in_bus.as_audio(), out_bus.as_audio_mut()) {
+                            let num_samples = data.num_samples as usize;
+                            for ch in 0..in_audio.num_channels.min(out_audio.num_channels) {
+                                if num_samples <= in_audio.channel_buffers32[ch].len() && 
+                                   num_samples <= out_audio.channel_buffers32[ch].len() {
+                                    out_audio.channel_buffers32[ch][..num_samples]
+                                        .copy_from_slice(&in_audio.channel_buffers32[ch][..num_samples]);
+                                }
+                            }
+                        }
+                    }
+                }
+                return vst3_sys::vst::kResultTrue;
+            }
+            
+            // Instrument mode: output silence (foundation build)
+            if let Some(outputs) = data.outputs.as_mut() {
+                for out_bus in outputs.iter_mut() {
+                    if let Some(out_audio) = out_bus.as_audio_mut() {
+                        let num_samples = data.num_samples as usize;
+                        for ch in 0..out_audio.num_channels {
+                            if num_samples <= out_audio.channel_buffers32[ch].len() {
+                                out_audio.channel_buffers32[ch][..num_samples].fill(0.0);
+                            }
+                        }
+                    }
                 }
             }
         }
+        
+        vst3_sys::vst::kResultTrue
     }
-}
 
-impl PluginProcessor for PeriodicInstrumentsProcessor {
-    fn initialize(&mut self, _context: &mut InitializeContext) -> Result<(), PluginError> {
-        self.active.store(true, Ordering::Relaxed);
-        tracing::info!("Processor initialized at {} Hz, max block {}", self.sample_rate, self.max_block_size);
-        Ok(())
-    }
-    
-    fn setup_processing(&mut self, setup: &ProcessingSetup) -> Result<(), PluginError> {
-        self.sample_rate = setup.sample_rate;
-        self.max_block_size = setup.max_samples_per_block;
-        
-        if self.max_block_size as usize > MAX_BLOCK_SIZE {
-            return Err(PluginError::BufferTooSmall);
-        }
-        
-        tracing::info!("Processing setup: {} Hz, max block {}", self.sample_rate, self.max_block_size);
-        Ok(())
-    }
-    
-    fn set_active(&mut self, active: bool) -> Result<(), PluginError> {
-        self.active.store(active, Ordering::Relaxed);
-        if active {
-            tracing::info!("Processor activated");
-        } else {
-            tracing::info!("Processor deactivated");
-        }
-        Ok(())
-    }
-    
-    fn process(&mut self, context: &mut ProcessContext) -> Result<(), PluginError> {
-        // Check if processing is active
-        if !self.active.load(Ordering::Relaxed) {
-            return Ok(());
-        }
-        
-        let num_samples = context.num_samples();
-        let num_output_channels = context.outputs().len();
-        
-        // Get bypass state
-        let bypassed = self.bypassed.load(Ordering::Relaxed);
-        
-        if bypassed {
-            // Bypass: pass input to output (for instruments, typically silence)
-            // Since this is an instrument with no audio input, output silence
-            self.clear_output(context.outputs_mut(), num_samples);
-        } else {
-            // Normal processing: output silence (stub implementation)
-            // Future tasks will add actual synthesis here
-            self.clear_output(context.outputs_mut(), num_samples);
-        }
-        
-        // Process parameter changes from host (automation)
-        // Note: In a real implementation, we'd read parameter changes from context.parameter_changes()
-        // For now, the parameter values are accessed directly via the shared Arc<ParameterValues>
-        
-        Ok(())
-    }
-    
-    fn set_bypass(&mut self, bypassed: bool) {
-        self.bypassed.store(bypassed, Ordering::Relaxed);
-    }
-    
-    fn get_tail_size(&self) -> usize {
+    fn get_tail_size(&self) -> i32 {
         0 // No tail for silence output
     }
-    
-    fn can_do_midi(&self) -> bool {
-        true
-    }
-    
-    fn can_do_automation(&self) -> bool {
-        true
-    }
 }
 
-/// Audio buffer wrapper for nice-plug
-#[derive(Debug)]
-pub struct AudioBuffer<T> {
-    channels: Vec<Vec<T>>,
-}
-
-impl<T> AudioBuffer<T> {
-    pub fn new(num_channels: usize, capacity: usize) -> Self 
-    where 
-        T: Default + Clone 
-    {
-        Self {
-            channels: vec![vec![T::default(); capacity]; num_channels],
-        }
-    }
-    
-    pub fn channels(&self) -> &[Vec<T>] {
-        &self.channels
-    }
-    
-    pub fn channels_mut(&mut self) -> &mut [Vec<T>] {
-        &mut self.channels
-    }
-    
-    pub fn channel(&self, index: usize) -> Option<&[T]> {
-        self.channels.get(index).map(|v| v.as_slice())
-    }
-    
-    pub fn channel_mut(&mut self, index: usize) -> Option<&mut [T]> {
-        self.channels.get_mut(index).map(|v| v.as_mut_slice())
-    }
-    
-    pub fn num_channels(&self) -> usize {
-        self.channels.len()
-    }
-}
+// Re-export from vst3-sys
+use vst3_sys::vst::{
+    IAudioProcessor, ProcessData, ProcessSetup, AudioBusBuffers, AudioBusType,
+    SpeakerArrangement, SymbolicSampleSizes, ProcessMode,
+    kResultTrue, kResultFalse, kInvalidArgument,
+};
