@@ -1614,7 +1614,11 @@ fn print_summary(results: &[TestResult]) {
     println!("{}", "-".repeat(60));
 
     for result in results {
-        let status = if result.passed { "✓ PASS" } else { "✗ FAIL" };
+        let status = if result.passed {
+            "✓ PASS"
+        } else {
+            "✗ FAIL"
+        };
         println!("{}  {} ({}ms)", status, result.name, result.duration_ms);
         if let Some(msg) = &result.message {
             println!("    {}", msg);
@@ -1691,7 +1695,8 @@ async fn main() -> Result<()> {
 
     // Run all tests with timeout
     let test_future = runner.run_all_tests();
-    let results = timeout(Duration::from_secs(120), test_future).await
+    let results = timeout(Duration::from_secs(120), test_future)
+        .await
         .context("Test suite timed out after 120 seconds")??;
 
     // Generate JUnit XML
